@@ -401,37 +401,38 @@ export default function PageEditor({
         </div>
       </div>
 
-      {cover ? (
-        <div
-          className={`relative -mx-4 ${icon ? "mb-14" : "mb-2"} h-70`}
-        >
-          <div className="absolute inset-0 overflow-hidden bg-zinc-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={cover}
-              alt=""
-              className="h-full w-full object-cover"
-            />
+      <div className="group/page-top">
+        {cover ? (
+          <div
+            className={`relative -mx-4 ${icon ? "mb-14" : "mb-2"} h-70`}
+          >
+            <div className="absolute inset-0 overflow-hidden bg-zinc-100">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={cover}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="relative mx-auto h-full w-[720px] max-w-full">
+              {icon ? (
+                <div className="absolute -bottom-[51px] left-0 flex h-[102px] w-[78px] items-center justify-center text-[78px] leading-none">
+                  {icon}
+                </div>
+              ) : null}
+            </div>
           </div>
-          <div className="relative mx-auto h-full w-[720px] max-w-full">
-            {icon ? (
-              <div className="absolute -bottom-[51px] left-0 flex h-[102px] w-[78px] items-center justify-center text-[78px] leading-none">
-                {icon}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {!cover && icon ? (
-        <div className="mx-auto w-[720px] max-w-full">
-          <div className="flex h-[102px] w-[78px] items-center justify-center text-[78px] leading-none">
-            {icon}
+        {!cover && icon ? (
+          <div className="mx-auto w-[720px] max-w-full">
+            <div className="flex h-[102px] w-[78px] items-center justify-center text-[78px] leading-none">
+              {icon}
+            </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      <div className="mx-auto mb-2 flex h-10 w-[720px] max-w-full items-center gap-1">
+      <div className="mx-auto mb-2 flex h-10 w-[720px] max-w-full items-center gap-1 opacity-0 transition-opacity group-hover/page-top:opacity-100 group-focus-within/page-top:opacity-100">
         <Button
           type="button"
           variant="ghost"
@@ -473,6 +474,7 @@ export default function PageEditor({
         className="block mx-auto w-[720px] max-w-full border-0 bg-transparent text-4xl font-semibold tracking-tight outline-none placeholder:text-zinc-300"
         placeholder={t("editor.placeholder")}
       />
+      </div>
 
       <input
         ref={markdownInputRef}
