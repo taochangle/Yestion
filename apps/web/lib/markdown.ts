@@ -29,6 +29,7 @@ export function markdownToTiptap(markdown: string): JSONContent {
     }
 
     if (line.trim().startsWith("```")) {
+      const language = line.trim().slice(3).trim().split(/\s+/)[0] || undefined;
       const codeLines: string[] = [];
       index += 1;
       while (
@@ -41,6 +42,7 @@ export function markdownToTiptap(markdown: string): JSONContent {
       index += 1;
       content.push({
         type: "codeBlock",
+        attrs: language ? { language } : undefined,
         content: [{ type: "text", text: codeLines.join("\n") }]
       });
       continue;
