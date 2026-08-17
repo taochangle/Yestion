@@ -4,9 +4,11 @@ import {
   EditorContent,
   type Editor,
   type JSONContent,
+  ReactNodeViewRenderer,
   useEditor
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
@@ -45,7 +47,9 @@ import { NumberChart } from "@/lib/number_chart";
 import { ChartBlock } from "@/lib/chart_block";
 import { BreadcrumbItem } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import CodeBlockView from "@/components/CodeBlockView";
 import { markdownToTiptap } from "@/lib/markdown";
+import { common, createLowlight } from "lowlight";
 import {
   Dialog,
   DialogContent,
@@ -95,6 +99,13 @@ type BlockEditorProps = {
   onUploadImage: (file: File) => Promise<string>;
   onUploadFile: (file: File) => Promise<string>;
 };
+
+const lowlight = createLowlight(common);
+const CodeBlockWithLanguage = CodeBlockLowlight.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(CodeBlockView);
+  }
+});
 
 const emptyMenu: SlashMenuState = {
   open: false,
@@ -456,14 +467,14 @@ export default function BlockEditor({
       },
       extensions: [
         StarterKit.configure({
+          codeBlock: false,
           heading: {
             levels: [1, 2, 3, 4]
-          },
-          codeBlock: {
-            HTMLAttributes: {
-              class: "block-code"
-            }
           }
+        }),
+        CodeBlockWithLanguage.configure({
+          lowlight,
+          defaultLanguage: null
         }),
         Placeholder.configure({
           placeholder: t("editor.placeholder")
