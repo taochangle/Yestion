@@ -439,7 +439,7 @@ export default function BlockEditor({
           }
 
           const looksLikeMarkdown =
-            /(^|\n)(#{1,6}\s|>\s|[-*]\s|\d+\.\s|```|\[[^\]]+\]\([^)]+\))/.test(
+            /(^|\n)(#{1,6}\s|>\s|[-*]\s|\d+\.\s|```|\[[^\]]+\]\([^)]+\)|\|)/.test(
               text
             );
           if (!looksLikeMarkdown) {
