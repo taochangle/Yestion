@@ -123,8 +123,8 @@ body {
   margin: 0.75rem 0;
   overflow-x: auto;
   border-radius: 0.75rem;
-  background: var(--color-zinc-950);
-  color: var(--color-zinc-100);
+  background: var(--color-zinc-100);
+  color: var(--color-zinc-900);
   padding: 1rem;
   font-size: 0.875rem;
   line-height: 1.6;
@@ -135,8 +135,8 @@ body {
   margin: 0.75rem 0;
   overflow-x: auto;
   border-radius: 0.75rem;
-  background: var(--color-zinc-950);
-  color: var(--color-zinc-100);
+  background: var(--color-zinc-100);
+  color: var(--color-zinc-900);
   padding: 1rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875rem;
