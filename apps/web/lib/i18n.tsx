@@ -44,6 +44,13 @@ const messages: Record<Locale, Record<string, string>> = {
     "auth.alreadyRegistered": "Already registered?",
     "auth.loginFailed": "Login failed",
     "auth.registerFailed": "Registration failed",
+    "sidebar.home": "Home",
+    "sidebar.chat": "Chat",
+    "sidebar.newChat": "New chat",
+    "sidebar.newPage": "New page",
+    "sidebar.newDatabase": "New database",
+    "sidebar.quickCreate": "Create",
+    "sidebar.chatEmpty": "Your chat conversations will appear here.",
     "sidebar.search": "Search",
     "sidebar.templates": "Templates",
     "sidebar.workspaces": "Workspaces",
@@ -135,7 +142,11 @@ const messages: Record<Locale, Record<string, string>> = {
     "shared.error": "This shared page is unavailable",
     "history.title": "Version history",
     "history.subtitle": "Recent revisions of this page.",
-    "history.failed": "Failed to load history"
+    "history.failed": "Failed to load history",
+    "chat.empty": "No conversations yet",
+    "chat.subtitle": "Chat will appear here once it is connected to your workspace.",
+    "chat.placeholder": "Ask AI...",
+    "chat.send": "Send"
   },
   zh: {
     "app.name": "NotionClone",
@@ -161,6 +172,13 @@ const messages: Record<Locale, Record<string, string>> = {
     "auth.alreadyRegistered": "已经注册？",
     "auth.loginFailed": "登录失败",
     "auth.registerFailed": "注册失败",
+    "sidebar.home": "首页",
+    "sidebar.chat": "对话",
+    "sidebar.newChat": "新建对话",
+    "sidebar.newPage": "新建页面",
+    "sidebar.newDatabase": "新建数据库",
+    "sidebar.quickCreate": "快速新建",
+    "sidebar.chatEmpty": "你的对话会显示在这里。",
     "sidebar.search": "搜索",
     "sidebar.templates": "模板",
     "sidebar.workspaces": "工作区",
@@ -252,7 +270,11 @@ const messages: Record<Locale, Record<string, string>> = {
     "shared.error": "此分享页面不可用",
     "history.title": "版本历史",
     "history.subtitle": "此页面的最近版本记录。",
-    "history.failed": "加载历史失败"
+    "history.failed": "加载历史失败",
+    "chat.empty": "还没有对话",
+    "chat.subtitle": "连接工作区后，对话会显示在这里。",
+    "chat.placeholder": "询问 AI...",
+    "chat.send": "发送"
   }
 };
 

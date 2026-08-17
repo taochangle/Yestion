@@ -300,7 +300,7 @@ export default function PageEditor({
           }
         }}
         disabled={saving}
-        className="w-full border-0 bg-transparent text-4xl font-semibold tracking-tight outline-none placeholder:text-zinc-300"
+        className="block mx-auto w-[720px] max-w-full border-0 bg-transparent text-4xl font-semibold tracking-tight outline-none placeholder:text-zinc-300"
         placeholder={t("editor.placeholder")}
       />
 
@@ -312,7 +312,7 @@ export default function PageEditor({
         onChange={handleMarkdownImport}
       />
 
-      <div className="mt-8 max-w-3xl">
+      <div className="mx-auto mt-8 w-[720px] max-w-full">
         <BlockEditor
           key={`${currentBlock.id}-${contentRevision}`}
           blockId={currentBlock.id}

@@ -5,15 +5,19 @@ import {
   ChevronDown,
   Check,
   Database,
-  LayoutTemplate,
+  Home,
   LogOut,
+  MessageCircle,
   PanelLeftClose,
   PanelLeftOpen,
   Pencil,
   Plus,
   Search,
+  Settings,
   Trash2,
+  TrendingUp,
   User as UserIcon,
+  UserPlus,
   X
 } from "lucide-react";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -21,6 +25,13 @@ import LanguageSwitch from "@/components/LanguageSwitch";
 import PageTree from "@/components/PageTree";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +47,12 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
 import { BlockNode, User, Workspace } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
@@ -46,13 +63,14 @@ type WorkspaceSidebarProps = {
   blocks: BlockNode[];
   selectedBlockId: string | null;
   collapsed: boolean;
+  mode: "home" | "chat";
   onToggleCollapsed: () => void;
+  onModeChange: (mode: "home" | "chat") => void;
   onSelectWorkspace: (workspaceId: string) => void;
   onSelectBlock: (block: BlockNode) => void;
   onUpdateWorkspace: (workspaceId: string, name: string) => Promise<void>;
   onDeleteWorkspace: (workspaceId: string) => Promise<void>;
   onOpenSearch: () => void;
-  onOpenTemplates: () => void;
   onCreateWorkspace: (name: string) => Promise<void>;
   onCreatePage: (parentId: string | null) => Promise<void>;
   onCreateDatabase: (parentId: string | null) => Promise<void>;
@@ -73,13 +91,14 @@ export default function WorkspaceSidebar({
   blocks,
   selectedBlockId,
   collapsed,
+  mode,
   onToggleCollapsed,
+  onModeChange,
   onSelectWorkspace,
   onSelectBlock,
   onUpdateWorkspace,
   onDeleteWorkspace,
   onOpenSearch,
-  onOpenTemplates,
   onCreateWorkspace,
   onCreatePage,
   onCreateDatabase,
@@ -88,6 +107,7 @@ export default function WorkspaceSidebar({
   onLogout
 }: WorkspaceSidebarProps) {
   const { t } = useI18n();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [creating, setCreating] = useState(false);
   const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(
@@ -134,8 +154,8 @@ export default function WorkspaceSidebar({
 
   return (
     <>
-      <aside className={`flex h-screen shrink-0 flex-col border-r border-zinc-200 bg-zinc-50 ${collapsed ? "w-0 overflow-hidden" : "w-[270px]"}`}>
-      <div className="border-b border-zinc-200 pb-4 pt-2">
+      <aside className={`relative flex h-screen shrink-0 flex-col border-r border-zinc-200 bg-zinc-50 ${collapsed ? "w-0 overflow-hidden" : "w-[270px]"}`}>
+      <div className="border-b border-zinc-200 px-4 pb-4 pt-2">
         {collapsed ? (
           <Button
             type="button"
@@ -151,19 +171,55 @@ export default function WorkspaceSidebar({
             <div className="flex items-center justify-between gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="justify-start">
+                  <Button variant="ghost" size="sm" className="justify-start pl-0">
                     <UserIcon size={14} />
                     {user.name}
                     <ChevronDown size={14} />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <div className="flex items-center justify-between gap-3 px-2 py-1.5">
-                    <span className="text-sm">Settings</span>
-                    <LanguageSwitch />
+                <DropdownMenuContent align="start" className="w-[300px]">
+                  <div className="flex items-center gap-2 px-2 py-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-md bg-zinc-200">
+                      <UserIcon size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{user.name}</p>
+                      <p className="truncate text-xs text-zinc-500">{user.email}</p>
+                    </div>
                   </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled>
+                    <TrendingUp size={14} />
+                    Upgrade
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                    <Settings size={14} />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <UserPlus size={14} />
+                    Invite members
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <Plus size={14} />
+                    Add account
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
+                  {workspaces.map((workspace) => (
+                    <DropdownMenuItem
+                      key={workspace.id}
+                      onClick={() => onSelectWorkspace(workspace.id)}
+                    >
+                      <span className="min-w-0 flex-1 truncate">
+                        {workspace.icon ? `${workspace.icon} ` : ""}
+                        {workspace.name}
+                      </span>
+                      {workspace.id === activeWorkspaceId && (
+                        <Check size={14} />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={onLogout}>
                     <LogOut size={14} />
@@ -175,39 +231,58 @@ export default function WorkspaceSidebar({
                 type="button"
                 variant="ghost"
                 size="sm"
+                className="pr-0"
                 onClick={onToggleCollapsed}
               >
                 <PanelLeftClose size={14} />
               </Button>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-3 flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onModeChange("home")}
+                  className={`h-7 justify-center px-2.5 ${
+                    mode === "home" ? "bg-zinc-200 text-zinc-900" : ""
+                  }`}
+                >
+                  <Home size={14} />
+                  {mode === "home" ? t("sidebar.home") : null}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onModeChange("chat")}
+                  className={`h-7 justify-center px-2.5 ${
+                    mode === "chat" ? "bg-zinc-200 text-zinc-900" : ""
+                  }`}
+                >
+                  <MessageCircle size={14} />
+                  {mode === "chat" ? t("sidebar.chat") : null}
+                </Button>
+              </div>
               <Button
                 type="button"
                 onClick={onOpenSearch}
                 variant="ghost"
                 size="sm"
-                className="justify-start"
+                className="ml-auto h-8 w-8 justify-end p-0"
+                aria-label={t("sidebar.search")}
               >
-                <Search size={13} />
-                {t("sidebar.search")}
-              </Button>
-              <Button
-                type="button"
-                onClick={onOpenTemplates}
-                variant="ghost"
-                size="sm"
-                className="justify-start"
-              >
-                <LayoutTemplate size={13} />
-                {t("sidebar.templates")}
+                <Search size={14} />
               </Button>
             </div>
           </>
         )}
       </div>
 
-      <div className={`border-b border-zinc-200 p-3 ${collapsed ? "hidden" : ""}`}>
-        <div className="flex items-center justify-between px-1">
+      {mode === "home" ? (
+        <>
+      <div className={`border-b border-zinc-200 px-4 py-3 ${collapsed ? "hidden" : ""}`}>
+        <div className="flex items-center justify-between">
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
             {t("sidebar.workspaces")}
           </p>
@@ -224,7 +299,7 @@ export default function WorkspaceSidebar({
               disabled={!activeWorkspaceId}
               variant="ghost"
               size="sm"
-              className="h-7 w-7 p-0"
+              className="h-7 w-6 justify-end p-0"
               aria-label="Edit workspace"
             >
               <Pencil size={13} />
@@ -235,7 +310,7 @@ export default function WorkspaceSidebar({
               disabled={!activeWorkspaceId}
               variant="ghost"
               size="sm"
-              className="h-7 w-7 p-0 hover:text-red-600"
+              className="h-7 w-6 justify-end p-0 hover:text-red-600"
               aria-label="Delete workspace"
             >
               <Trash2 size={13} />
@@ -321,8 +396,8 @@ export default function WorkspaceSidebar({
         </form>
       </div>
 
-      <div className={`min-h-0 flex-1 overflow-y-auto p-3 ${collapsed ? "hidden" : ""}`}>
-        <div className="mb-2 flex items-center justify-between px-1">
+      <div className={`min-h-0 flex-1 overflow-y-auto px-4 py-3 pb-20 ${collapsed ? "hidden" : ""}`}>
+        <div className="mb-2 flex items-center justify-between">
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
             {t("sidebar.pages")}
           </p>
@@ -360,8 +435,77 @@ export default function WorkspaceSidebar({
           onMove={onMoveBlock}
         />
       </div>
+        </>
+        ) : (
+          <div className={`min-h-0 flex-1 overflow-y-auto px-4 py-3 pb-20 ${collapsed ? "hidden" : ""}`}>
+            <div className="rounded-lg border border-dashed border-zinc-200 px-3 py-5 text-center text-sm text-zinc-500">
+              {t("sidebar.chatEmpty")}
+            </div>
+          </div>
+        )}
+
+      <div className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 px-4 pb-4 pt-2 ${collapsed ? "hidden" : ""}`}>
+        <div className="flex items-center justify-between gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="pointer-events-auto h-10 w-[188px] justify-center rounded-full border-zinc-300 bg-white shadow-sm"
+                  onClick={() => onModeChange("chat")}
+                >
+                  <MessageCircle size={14} />
+                  {t("sidebar.newChat")}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t("sidebar.newChat")}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="pointer-events-auto h-10 w-10 rounded-full border-zinc-300 bg-white p-0 shadow-sm"
+                aria-label={t("sidebar.quickCreate")}
+              >
+                <Plus size={15} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => onCreatePage(null)}>
+                <Plus size={14} />
+                {t("sidebar.newPage")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onCreateDatabase(null)}>
+                <Database size={14} />
+                {t("sidebar.newDatabase")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
       </aside>
+
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Settings</DialogTitle>
+            <DialogDescription>
+              Choose your preferred language.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm">Language</span>
+            <LanguageSwitch />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={pendingDeleteWorkspaceId !== null}

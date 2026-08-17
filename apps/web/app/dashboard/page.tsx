@@ -3,6 +3,7 @@
 import { type JSONContent } from "@tiptap/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ChatPanel from "@/components/ChatPanel";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import DatabaseView from "@/components/DatabaseView";
 import MovePageDialog from "@/components/MovePageDialog";
@@ -51,6 +52,7 @@ export default function DashboardPage() {
   const [templateOpen, setTemplateOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarMode, setSidebarMode] = useState<"home" | "chat">("home");
   const [error, setError] = useState<string | null>(null);
 
   const loadBlocks = useCallback(async (workspaceId: string, preferredBlockId?: string) => {
@@ -475,13 +477,14 @@ export default function DashboardPage() {
           blocks={blocks}
           selectedBlockId={selectedBlockId}
           collapsed={sidebarCollapsed}
+          mode={sidebarMode}
           onToggleCollapsed={() => setSidebarCollapsed((current) => !current)}
+          onModeChange={setSidebarMode}
           onSelectWorkspace={handleSelectWorkspace}
           onSelectBlock={handleSelectBlock}
           onUpdateWorkspace={handleUpdateWorkspace}
           onDeleteWorkspace={handleDeleteWorkspace}
           onOpenSearch={() => setSearchOpen(true)}
-          onOpenTemplates={() => setTemplateOpen(true)}
           onCreateWorkspace={handleCreateWorkspace}
           onCreatePage={handleCreatePage}
           onCreateDatabase={handleCreateDatabase}
@@ -490,7 +493,12 @@ export default function DashboardPage() {
           onLogout={handleLogout}
         />
 
-        {selectedBlock?.type === "database" ? (
+        {sidebarMode === "chat" ? (
+          <ChatPanel
+            sidebarCollapsed={sidebarCollapsed}
+            onOpenSidebar={() => setSidebarCollapsed(false)}
+          />
+        ) : selectedBlock?.type === "database" ? (
           <DatabaseView
             key={selectedBlock.id}
             databaseBlock={selectedBlock}

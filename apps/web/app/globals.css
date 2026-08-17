@@ -104,12 +104,12 @@ body {
 
 .block-editor ul[data-type="taskList"] li {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.5rem;
 }
 
 .block-editor ul[data-type="taskList"] li > label {
-  margin-top: 0.2rem;
+  margin-top: 0;
 }
 
 .block-editor blockquote {
