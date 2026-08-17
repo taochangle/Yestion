@@ -130,6 +130,20 @@ body {
   line-height: 1.6;
 }
 
+.block-editor .block-code {
+  display: block;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: var(--color-zinc-950);
+  color: var(--color-zinc-100);
+  padding: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  white-space: pre;
+}
+
 .block-editor code {
   border-radius: 0.375rem;
   background: var(--color-zinc-100);
@@ -505,6 +519,11 @@ body {
 }
 
 .dark .block-editor pre {
+  background: oklch(0.13 0 0);
+  color: oklch(0.9 0 0);
+}
+
+.dark .block-editor .block-code {
   background: oklch(0.13 0 0);
   color: oklch(0.9 0 0);
 }
