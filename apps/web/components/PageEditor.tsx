@@ -101,11 +101,15 @@ export default function PageEditor({
   const blockIdRef = useRef(selectedBlock?.id ?? null);
   const saveContentRef = useRef(onSaveContent);
   const latestDocumentRef = useRef<JSONContent | null>(null);
+  const draftTitleRef = useRef(draftTitle);
+  const selectedTitleRef = useRef(selectedBlock?.properties.title ?? "");
   const markdownInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     blockIdRef.current = selectedBlock?.id ?? null;
     saveContentRef.current = onSaveContent;
+    draftTitleRef.current = draftTitle;
+    selectedTitleRef.current = selectedBlock?.properties.title ?? "";
   });
 
   const handleDocumentChange = useCallback((document: JSONContent) => {
@@ -151,12 +155,37 @@ export default function PageEditor({
       if (event.shiftKey && event.key.toLowerCase() === "m") {
         event.preventDefault();
         onMoveTo();
+        return;
+      }
+
+      if (event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        const blockId = blockIdRef.current;
+        if (!blockId) {
+          return;
+        }
+
+        const title = draftTitleRef.current.trim();
+        if (title && title !== selectedTitleRef.current) {
+          setSaving(true);
+          void onUpdateTitle(blockId, title).finally(() => setSaving(false));
+        }
+
+        if (saveTimerRef.current) {
+          clearTimeout(saveTimerRef.current);
+          saveTimerRef.current = null;
+        }
+
+        const document = latestDocumentRef.current;
+        if (document) {
+          void saveContentRef.current(blockId, document);
+        }
       }
     }
 
     window.addEventListener("keydown", handlePageShortcut);
     return () => window.removeEventListener("keydown", handlePageShortcut);
-  }, [onCopyLink, onDuplicate, onMoveTo]);
+  }, [onCopyLink, onDuplicate, onMoveTo, onUpdateTitle]);
 
   if (!selectedBlock) {
     return (
