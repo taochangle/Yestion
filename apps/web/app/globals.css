@@ -465,3 +465,62 @@ body {
     @apply font-sans;
   }
 }
+
+.dark {
+  --color-zinc-50: oklch(0.18 0 0);
+  --color-zinc-100: oklch(0.22 0 0);
+  --color-zinc-200: oklch(0.28 0 0);
+  --color-zinc-300: oklch(0.34 0 0);
+  --color-zinc-400: oklch(0.55 0 0);
+  --color-zinc-500: oklch(0.68 0 0);
+  --color-zinc-600: oklch(0.78 0 0);
+  --color-zinc-700: oklch(0.86 0 0);
+  --color-zinc-800: oklch(0.92 0 0);
+  --color-zinc-900: oklch(0.97 0 0);
+  --color-zinc-950: oklch(0.99 0 0);
+}
+
+.dark .bg-white {
+  background-color: var(--color-zinc-800);
+}
+
+.dark .bg-white\/90 {
+  background-color: color-mix(in oklab, var(--color-zinc-800) 90%, transparent);
+}
+
+.dark .bg-white\/70 {
+  background-color: color-mix(in oklab, var(--color-zinc-800) 70%, transparent);
+}
+
+.dark .bg-white\/60 {
+  background-color: color-mix(in oklab, var(--color-zinc-800) 60%, transparent);
+}
+
+.dark .bg-zinc-900 {
+  color: var(--color-zinc-950);
+}
+
+.dark ::placeholder {
+  color: var(--color-zinc-500);
+}
+
+.dark .block-editor pre {
+  background: oklch(0.13 0 0);
+  color: oklch(0.9 0 0);
+}
+
+.dark .block-editor pre code {
+  color: inherit;
+}
+
+.dark .block-editor code {
+  background: var(--color-zinc-100);
+}
+
+.dark .block-editor .block-chart {
+  background: var(--color-zinc-800);
+}
+
+.dark .block-editor .block-button {
+  color: var(--color-zinc-950);
+}

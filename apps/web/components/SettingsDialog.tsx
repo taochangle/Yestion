@@ -26,6 +26,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { User, Workspace } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 type SettingsDialogProps = {
   open: boolean;
@@ -95,8 +96,8 @@ export default function SettingsDialog({
   workspace
 }: SettingsDialogProps) {
   const { t } = useI18n();
+  const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<SettingsTab>("preferences");
-  const [useSystemAppearance, setUseSystemAppearance] = useState(true);
   const [highContrast, setHighContrast] = useState(false);
   const [enterNewLine, setEnterNewLine] = useState(true);
   const [weekStartsMonday, setWeekStartsMonday] = useState(true);
@@ -319,9 +320,9 @@ export default function SettingsDialog({
                       description={t("settings.appearanceDescription")}
                     >
                       <Select
-                        value={useSystemAppearance ? "system" : "light"}
+                        value={theme}
                         onValueChange={(value) =>
-                          setUseSystemAppearance(value === "system")
+                          setTheme(value as "light" | "dark" | "system")
                         }
                       >
                         <SelectTrigger size="sm" className="w-36">
@@ -333,6 +334,9 @@ export default function SettingsDialog({
                           </SelectItem>
                           <SelectItem value="light">
                             {t("settings.light")}
+                          </SelectItem>
+                          <SelectItem value="dark">
+                            {t("settings.dark")}
                           </SelectItem>
                         </SelectContent>
                       </Select>
