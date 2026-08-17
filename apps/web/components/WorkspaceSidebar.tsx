@@ -1,0 +1,377 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import {
+  ChevronDown,
+  Check,
+  Database,
+  LayoutTemplate,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  User as UserIcon,
+  X
+} from "lucide-react";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import LanguageSwitch from "@/components/LanguageSwitch";
+import PageTree from "@/components/PageTree";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { BlockNode, User, Workspace } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
+
+type WorkspaceSidebarProps = {
+  user: User;
+  workspaces: Workspace[];
+  activeWorkspaceId: string;
+  blocks: BlockNode[];
+  selectedBlockId: string | null;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
+  onSelectWorkspace: (workspaceId: string) => void;
+  onSelectBlock: (block: BlockNode) => void;
+  onUpdateWorkspace: (workspaceId: string, name: string) => Promise<void>;
+  onDeleteWorkspace: (workspaceId: string) => Promise<void>;
+  onOpenSearch: () => void;
+  onOpenTemplates: () => void;
+  onCreateWorkspace: (name: string) => Promise<void>;
+  onCreatePage: (parentId: string | null) => Promise<void>;
+  onCreateDatabase: (parentId: string | null) => Promise<void>;
+  onDeletePage: (blockId: string) => Promise<void>;
+  onMoveBlock: (
+    blockId: string,
+    parentId: string | null,
+    position: number,
+    clearParent: boolean
+  ) => Promise<void>;
+  onLogout: () => void;
+};
+
+export default function WorkspaceSidebar({
+  user,
+  workspaces,
+  activeWorkspaceId,
+  blocks,
+  selectedBlockId,
+  collapsed,
+  onToggleCollapsed,
+  onSelectWorkspace,
+  onSelectBlock,
+  onUpdateWorkspace,
+  onDeleteWorkspace,
+  onOpenSearch,
+  onOpenTemplates,
+  onCreateWorkspace,
+  onCreatePage,
+  onCreateDatabase,
+  onDeletePage,
+  onMoveBlock,
+  onLogout
+}: WorkspaceSidebarProps) {
+  const { t } = useI18n();
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(
+    null
+  );
+  const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
+  const [pendingDeleteWorkspaceId, setPendingDeleteWorkspaceId] = useState<
+    string | null
+  >(null);
+
+  async function handleCreateWorkspace(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = newWorkspaceName.trim();
+    if (!name) {
+      return;
+    }
+
+    setCreating(true);
+    try {
+      await onCreateWorkspace(name);
+      setNewWorkspaceName("");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function saveWorkspaceName(workspaceId: string) {
+    const name = editingWorkspaceName.trim();
+    if (!name) {
+      setEditingWorkspaceId(null);
+      return;
+    }
+    await onUpdateWorkspace(workspaceId, name);
+    setEditingWorkspaceId(null);
+  }
+
+  async function confirmDeleteWorkspace() {
+    const workspaceId = pendingDeleteWorkspaceId;
+    setPendingDeleteWorkspaceId(null);
+    if (workspaceId) {
+      await onDeleteWorkspace(workspaceId);
+    }
+  }
+
+  return (
+    <>
+      <aside className={`flex h-screen shrink-0 flex-col border-r border-zinc-200 bg-zinc-50 ${collapsed ? "w-0 overflow-hidden" : "w-[270px]"}`}>
+      <div className="border-b border-zinc-200 pb-4 pt-2">
+        {collapsed ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-full"
+            onClick={onToggleCollapsed}
+          >
+            <PanelLeftOpen size={14} />
+          </Button>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="justify-start">
+                    <UserIcon size={14} />
+                    {user.name}
+                    <ChevronDown size={14} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="flex items-center justify-between gap-3 px-2 py-1.5">
+                    <span className="text-sm">Settings</span>
+                    <LanguageSwitch />
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onLogout}>
+                    <LogOut size={14} />
+                    {t("sidebar.logout")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onToggleCollapsed}
+              >
+                <PanelLeftClose size={14} />
+              </Button>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                onClick={onOpenSearch}
+                variant="ghost"
+                size="sm"
+                className="justify-start"
+              >
+                <Search size={13} />
+                {t("sidebar.search")}
+              </Button>
+              <Button
+                type="button"
+                onClick={onOpenTemplates}
+                variant="ghost"
+                size="sm"
+                className="justify-start"
+              >
+                <LayoutTemplate size={13} />
+                {t("sidebar.templates")}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className={`border-b border-zinc-200 p-3 ${collapsed ? "hidden" : ""}`}>
+        <div className="flex items-center justify-between px-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+            {t("sidebar.workspaces")}
+          </p>
+          <div className="flex items-center gap-0.5">
+            <Button
+              type="button"
+              onClick={() => {
+                const workspace = workspaces.find(
+                  (item) => item.id === activeWorkspaceId
+                );
+                setEditingWorkspaceId(activeWorkspaceId);
+                setEditingWorkspaceName(workspace?.name ?? "");
+              }}
+              disabled={!activeWorkspaceId}
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              aria-label="Edit workspace"
+            >
+              <Pencil size={13} />
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setPendingDeleteWorkspaceId(activeWorkspaceId)}
+              disabled={!activeWorkspaceId}
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 hover:text-red-600"
+              aria-label="Delete workspace"
+            >
+              <Trash2 size={13} />
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-2">
+          {editingWorkspaceId ? (
+            <div className="flex items-center gap-1">
+              <Input
+                autoFocus
+                value={editingWorkspaceName}
+                onChange={(event) => setEditingWorkspaceName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    void saveWorkspaceName(editingWorkspaceId);
+                  }
+                  if (event.key === "Escape") {
+                    setEditingWorkspaceId(null);
+                  }
+                }}
+                className="min-w-0 flex-1"
+              />
+              <Button
+                type="button"
+                onClick={() => void saveWorkspaceName(editingWorkspaceId)}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                aria-label="Save workspace"
+              >
+                <Check size={13} />
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setEditingWorkspaceId(null)}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                aria-label="Cancel"
+              >
+                <X size={13} />
+              </Button>
+            </div>
+          ) : (
+            <Select
+              value={activeWorkspaceId}
+              onValueChange={onSelectWorkspace}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t("sidebar.workspaces")} />
+              </SelectTrigger>
+              <SelectContent>
+                {workspaces.map((workspace) => (
+                  <SelectItem key={workspace.id} value={workspace.id}>
+                    {workspace.icon ? `${workspace.icon} ` : ""}
+                    {workspace.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+
+        <form
+          onSubmit={handleCreateWorkspace}
+          className="mt-3 flex items-center gap-2"
+        >
+          <Input
+            value={newWorkspaceName}
+            onChange={(event) => setNewWorkspaceName(event.target.value)}
+            placeholder={t("sidebar.newWorkspace")}
+            className="h-8 min-w-0 flex-1"
+          />
+          <Button
+            type="submit"
+            disabled={creating || !newWorkspaceName.trim()}
+            size="sm"
+          >
+            {t("common.add")}
+          </Button>
+        </form>
+      </div>
+
+      <div className={`min-h-0 flex-1 overflow-y-auto p-3 ${collapsed ? "hidden" : ""}`}>
+        <div className="mb-2 flex items-center justify-between px-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+            {t("sidebar.pages")}
+          </p>
+          <div className="flex items-center gap-0.5">
+            <Button
+              type="button"
+              onClick={() => onCreatePage(null)}
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              aria-label={t("sidebar.addRootPage")}
+            >
+              <Plus size={13} />
+            </Button>
+            <Button
+              type="button"
+              onClick={() => onCreateDatabase(null)}
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              aria-label={t("sidebar.addRootDatabase")}
+            >
+              <Database size={13} />
+            </Button>
+          </div>
+        </div>
+
+        <PageTree
+          nodes={blocks}
+          selectedId={selectedBlockId}
+          onSelect={onSelectBlock}
+          onCreateChild={onCreatePage}
+          onCreateDatabase={onCreateDatabase}
+          onDelete={onDeletePage}
+          onMove={onMoveBlock}
+        />
+      </div>
+
+      </aside>
+
+      <ConfirmDialog
+        open={pendingDeleteWorkspaceId !== null}
+        title={t("workspace.deleteTitle")}
+        message={t("workspace.deleteMessage")}
+        confirmLabel={t("common.delete")}
+        danger
+        onConfirm={confirmDeleteWorkspace}
+        onCancel={() => setPendingDeleteWorkspaceId(null)}
+      />
+    </>
+  );
+}

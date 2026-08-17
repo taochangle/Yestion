@@ -1,0 +1,17 @@
+.env
+.env.local
+.env.*.local
+!.env.example
+
+node_modules/
+.next/
+out/
+dist/
+coverage/
+
+apps/api/bin/
+apps/api/tmp/
+
+.DS_Store
+*.log
+
