@@ -45,6 +45,7 @@ import { NumberChart } from "@/lib/number_chart";
 import { ChartBlock } from "@/lib/chart_block";
 import { BreadcrumbItem } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { markdownToTiptap } from "@/lib/markdown";
 import {
   Dialog,
   DialogContent,
@@ -430,6 +431,29 @@ export default function BlockEditor({
     {
       immediatelyRender: false,
       content: initialDocument,
+      editorProps: {
+        handlePaste: (view, event) => {
+          const text = event.clipboardData?.getData("text/plain");
+          if (!text) {
+            return false;
+          }
+
+          const looksLikeMarkdown =
+            /(^|\n)(#{1,6}\s|>\s|[-*]\s|\d+\.\s|```|\[[^\]]+\]\([^)]+\))/.test(
+              text
+            );
+          if (!looksLikeMarkdown) {
+            return false;
+          }
+
+          event.preventDefault();
+          const document = markdownToTiptap(text);
+          const fragment = view.state.schema.nodeFromJSON(document).content;
+          const { from, to } = view.state.selection;
+          view.dispatch(view.state.tr.replaceWith(from, to, fragment));
+          return true;
+        }
+      },
       extensions: [
         StarterKit.configure({
           heading: {
