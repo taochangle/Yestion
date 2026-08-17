@@ -3,6 +3,7 @@
 import { type JSONContent } from "@tiptap/react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Image from "@tiptap/extension-image";
@@ -28,6 +29,9 @@ import { EquationBlock } from "@/lib/equation_block";
 import { Columns, Column } from "@/lib/columns";
 import { NumberChart } from "@/lib/number_chart";
 import { ChartBlock } from "@/lib/chart_block";
+import { common, createLowlight } from "lowlight";
+
+const lowlight = createLowlight(common);
 
 export default function ReadOnlyEditor({
   content
@@ -39,7 +43,13 @@ export default function ReadOnlyEditor({
     content,
     editable: false,
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        codeBlock: false
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        defaultLanguage: null
+      }),
       TaskList,
       TaskItem,
       Image.configure({ allowBase64: true }),
