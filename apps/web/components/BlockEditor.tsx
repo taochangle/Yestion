@@ -45,6 +45,12 @@ import { EquationBlock } from "@/lib/equation_block";
 import { Columns, Column } from "@/lib/columns";
 import { NumberChart } from "@/lib/number_chart";
 import { ChartBlock } from "@/lib/chart_block";
+import {
+  InlineMath,
+  MathBlock,
+  MermaidBlock
+} from "@/lib/rich_blocks";
+import { normalizeRichDocument } from "@/lib/rich_content";
 import { BreadcrumbItem } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import CodeBlockView from "@/components/CodeBlockView";
@@ -210,6 +216,17 @@ export default function BlockEditor({
 
   const updateToolbar = useCallback((editor: Editor) => {
     const { empty, from } = editor.state.selection;
+
+    if (
+      editor.isActive("mathBlock") ||
+      editor.isActive("inlineMath") ||
+      editor.isActive("mermaidBlock")
+    ) {
+      setToolbar((current) =>
+        current.open ? { ...current, open: false } : current
+      );
+      return;
+    }
 
     if (empty) {
       setToolbar((current) =>
@@ -441,7 +458,9 @@ export default function BlockEditor({
   const editor = useEditor(
     {
       immediatelyRender: false,
-      content: initialDocument,
+      content: initialDocument
+        ? normalizeRichDocument(initialDocument)
+        : undefined,
       editorProps: {
         handlePaste: (view, event) => {
           const text = event.clipboardData?.getData("text/plain");
@@ -530,7 +549,10 @@ export default function BlockEditor({
         Columns,
         Column,
         NumberChart,
-        ChartBlock
+        ChartBlock,
+        MathBlock,
+        InlineMath,
+        MermaidBlock
       ],
       onUpdate: handleEditorUpdate,
       onSelectionUpdate: handleEditorUpdate
@@ -539,8 +561,8 @@ export default function BlockEditor({
   );
 
   const commands = useMemo(
-    () => (editor ? getSlashCommands(editor, breadcrumb) : []),
-    [breadcrumb, editor]
+    () => (editor ? getSlashCommands(editor, breadcrumb, t) : []),
+    [breadcrumb, editor, t]
   );
 
   const filteredCommands = useMemo(() => {
@@ -1195,9 +1217,16 @@ function SlashMenu({
   onHover: (index: number) => void;
   onSelect: (command: SlashCommand) => void;
 }) {
+  const { t } = useI18n();
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const groupedCommands = useMemo(() => {
+    const commandCategoryOrder = [
+      t("editor.block.category.basic"),
+      t("editor.block.category.media"),
+      t("editor.block.category.advanced"),
+      t("editor.block.category.actions")
+    ];
     const groups = new Map<string, SlashCommand[]>();
     for (const command of commands) {
       const list = groups.get(command.category) ?? [];
@@ -1209,7 +1238,7 @@ function SlashMenu({
         commandCategoryOrder.indexOf(a[0]) -
         commandCategoryOrder.indexOf(b[0])
     );
-  }, [commands]);
+  }, [commands, t]);
 
   useEffect(() => {
     const command = commands[menu.selectedIndex];
@@ -1275,7 +1304,8 @@ function SlashMenu({
 
 function getSlashCommands(
   editor: Editor,
-  breadcrumb: BreadcrumbItem[]
+  breadcrumb: BreadcrumbItem[],
+  t: (key: string) => string
 ): SlashCommand[] {
   const commandDefinitions: SlashCommandDefinition[] = [
     {
@@ -1569,7 +1599,9 @@ function getSlashCommands(
 
   return commandDefinitions.map((command) => ({
     ...command,
-    category: commandCategory(command.id)
+    label: t(`editor.block.${command.id}.label`),
+    description: t(`editor.block.${command.id}.description`),
+    category: commandCategory(t, command.id)
   }));
 }
 
@@ -1653,14 +1685,14 @@ function columnsContent(count: number): JSONContent {
   };
 }
 
-const commandCategoryOrder = [
-  "Basic blocks",
-  "Media & Database",
-  "Advanced blocks & Data source",
-  "Actions & Text/Background color"
-];
+function commandCategory(t: (key: string) => string, id: string): string {
+  const key = commandCategoryKey(id);
+  return t(`editor.block.category.${key}`);
+}
 
-function commandCategory(id: string): string {
+function commandCategoryKey(
+  id: string
+): "basic" | "media" | "advanced" | "actions" {
   if (
     [
       "paragraph",
@@ -1679,17 +1711,17 @@ function commandCategory(id: string): string {
       "link"
     ].includes(id)
   ) {
-    return "Basic blocks";
+    return "basic";
   }
   if (
     ["image", "video", "audio", "file", "bookmark", "table"].includes(id)
   ) {
-    return "Media & Database";
+    return "media";
   }
   if (
     ["toc", "equation", "button", "breadcrumb", "synced", "columns2", "columns3"].includes(id)
   ) {
-    return "Advanced blocks & Data source";
+    return "advanced";
   }
-  return "Actions & Text/Background color";
+  return "actions";
 }

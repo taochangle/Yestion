@@ -30,6 +30,12 @@ import { Columns, Column } from "@/lib/columns";
 import { NumberChart } from "@/lib/number_chart";
 import { ChartBlock } from "@/lib/chart_block";
 import { common, createLowlight } from "lowlight";
+import {
+  InlineMath,
+  MathBlock,
+  MermaidBlock
+} from "@/lib/rich_blocks";
+import { normalizeRichDocument } from "@/lib/rich_content";
 
 const lowlight = createLowlight(common);
 
@@ -40,7 +46,7 @@ export default function ReadOnlyEditor({
 }) {
   const editor = useEditor({
     immediatelyRender: false,
-    content,
+    content: content ? normalizeRichDocument(content) : content,
     editable: false,
     extensions: [
       StarterKit.configure({
@@ -71,7 +77,10 @@ export default function ReadOnlyEditor({
       Columns,
       Column,
       NumberChart,
-      ChartBlock
+      ChartBlock,
+      MathBlock,
+      InlineMath,
+      MermaidBlock
     ]
   });
 

@@ -622,3 +622,19 @@ body {
 .dark .hljs-quote {
   color: #8b949e;
 }
+
+.block-math {
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.inline-math {
+  display: inline-block;
+}
+
+.block-mermaid {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
