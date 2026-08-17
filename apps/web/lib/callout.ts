@@ -54,12 +54,14 @@ export const Callout = Node.create<CalloutOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
+    const emoji = HTMLAttributes["data-callout-emoji"] ?? "💡";
+
     return [
       "div",
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         "data-type": "callout"
       }),
-      ["span", { class: "block-callout-emoji", contenteditable: "false" }, HTMLAttributes.emoji],
+      ["span", { class: "block-callout-emoji", contenteditable: "false" }, emoji],
       ["div", { class: "block-callout-content" }, 0]
     ];
   },
