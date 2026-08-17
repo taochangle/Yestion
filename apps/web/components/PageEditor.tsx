@@ -316,6 +316,9 @@ export default function PageEditor({
         </nav>
 
         <div className="flex shrink-0 items-center gap-1">
+          <span className="mr-1 text-xs text-muted-foreground">
+            {t("editor.lastEdited")}
+          </span>
           <time className="mr-1 text-xs text-muted-foreground">
             {formatRelativeTime(new Date(currentBlock.updatedAt), locale)}
           </time>
