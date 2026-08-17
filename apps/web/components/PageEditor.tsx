@@ -14,15 +14,22 @@ import {
   Download,
   FolderInput,
   History,
+  Image as ImageIcon,
   Link,
   MoreHorizontal,
   PanelLeftOpen,
   Share2,
+  SmilePlus,
+  Star,
   Trash2,
   Upload
 } from "lucide-react";
 import BlockEditor from "@/components/BlockEditor";
 import HistoryDialog from "@/components/HistoryDialog";
+import PageCoverDialog, {
+  UNSPLASH_COVERS
+} from "@/components/PageCoverDialog";
+import PageIconDialog from "@/components/PageIconDialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -39,11 +46,16 @@ import {
   normalizeLegacyMarkdownDocument,
   tiptapToMarkdown
 } from "@/lib/markdown";
+import { formatRelativeTime } from "@/lib/time";
 
 type PageEditorProps = {
   selectedBlock: BlockNode | null;
   breadcrumb: BreadcrumbItem[];
   onUpdateTitle: (blockId: string, title: string) => Promise<void>;
+  onUpdateProperties: (
+    blockId: string,
+    properties: Record<string, unknown>
+  ) => Promise<void>;
   onSaveContent: (blockId: string, document: JSONContent) => Promise<void>;
   onUploadImage: (file: File) => Promise<string>;
   onUploadFile: (file: File) => Promise<string>;
@@ -60,6 +72,7 @@ export default function PageEditor({
   selectedBlock,
   breadcrumb,
   onUpdateTitle,
+  onUpdateProperties,
   onSaveContent,
   onUploadImage,
   onUploadFile,
@@ -71,7 +84,7 @@ export default function PageEditor({
   sidebarCollapsed,
   onOpenSidebar
 }: PageEditorProps) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [draftTitle, setDraftTitle] = useState(
     selectedBlock?.properties.title ?? ""
   );
@@ -81,6 +94,9 @@ export default function PageEditor({
   );
   const [contentRevision, setContentRevision] = useState(0);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [coverOpen, setCoverOpen] = useState(false);
+  const [iconOpen, setIconOpen] = useState(false);
+  const [savingProperties, setSavingProperties] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const blockIdRef = useRef(selectedBlock?.id ?? null);
   const saveContentRef = useRef(onSaveContent);
@@ -151,6 +167,75 @@ export default function PageEditor({
   }
 
   const currentBlock = selectedBlock;
+  const cover =
+    typeof currentBlock.properties.cover === "string"
+      ? currentBlock.properties.cover
+      : "";
+  const icon =
+    typeof currentBlock.properties.icon === "string"
+      ? currentBlock.properties.icon
+      : "";
+  const favorite = currentBlock.properties.favorite === true;
+
+  async function toggleFavorite() {
+    setSavingProperties(true);
+    try {
+      await onUpdateProperties(currentBlock.id, { favorite: !favorite });
+    } finally {
+      setSavingProperties(false);
+    }
+  }
+
+  async function updateCover(nextCover: string) {
+    setSavingProperties(true);
+    try {
+      await onUpdateProperties(currentBlock.id, { cover: nextCover });
+      setCoverOpen(false);
+    } finally {
+      setSavingProperties(false);
+    }
+  }
+
+  async function addRandomCover() {
+    const nextCover =
+      UNSPLASH_COVERS[Math.floor(Math.random() * UNSPLASH_COVERS.length)].url;
+    setSavingProperties(true);
+    try {
+      await onUpdateProperties(currentBlock.id, { cover: nextCover });
+    } finally {
+      setSavingProperties(false);
+    }
+  }
+
+  async function removeCover() {
+    setSavingProperties(true);
+    try {
+      await onUpdateProperties(currentBlock.id, { cover: "" });
+      setCoverOpen(false);
+    } finally {
+      setSavingProperties(false);
+    }
+  }
+
+  async function updateIcon(nextIcon: string) {
+    setSavingProperties(true);
+    try {
+      await onUpdateProperties(currentBlock.id, { icon: nextIcon });
+      setIconOpen(false);
+    } finally {
+      setSavingProperties(false);
+    }
+  }
+
+  async function removeIcon() {
+    setSavingProperties(true);
+    try {
+      await onUpdateProperties(currentBlock.id, { icon: "" });
+      setIconOpen(false);
+    } finally {
+      setSavingProperties(false);
+    }
+  }
 
   async function saveTitle() {
     const title = draftTitle.trim();
@@ -206,8 +291,8 @@ export default function PageEditor({
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-2">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+      <div className="sticky top-0 z-20 -mx-4 flex items-center justify-between gap-3 bg-white px-4 pb-2 pt-2">
         <nav className="flex min-w-0 flex-wrap items-center gap-1 text-sm leading-none text-zinc-500">
           {sidebarCollapsed && (
             <Button
@@ -232,19 +317,42 @@ export default function PageEditor({
 
         <div className="flex shrink-0 items-center gap-1">
           <time className="mr-1 text-xs text-muted-foreground">
-            {new Date(currentBlock.updatedAt).toLocaleString()}
+            {formatRelativeTime(new Date(currentBlock.updatedAt), locale)}
           </time>
-          <Button type="button" onClick={onOpenShare} variant="link" size="sm">
+          <Button
+            type="button"
+            onClick={onOpenShare}
+            variant="link"
+            size="sm"
+            className="h-7 w-7 cursor-pointer p-0"
+            aria-label={t("editor.share")}
+          >
             <Share2 />
-            {t("editor.share")}
+          </Button>
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="h-7 w-7 cursor-pointer p-0"
+            aria-label={t("editor.favorite")}
+            onClick={() => void toggleFavorite()}
+            disabled={savingProperties}
+          >
+            <Star
+              className={favorite ? "fill-yellow-400 text-yellow-400" : ""}
+            />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="link" size="sm">
+              <Button
+                variant="link"
+                size="sm"
+                className="h-7 w-7 cursor-pointer p-0"
+              >
                 <MoreHorizontal />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuItem onClick={() => void onCopyLink()}>
                 <Link />
                 {t("editor.copyLink")}
@@ -290,6 +398,65 @@ export default function PageEditor({
         </div>
       </div>
 
+      {cover ? (
+        <div
+          className={`relative -mx-4 ${icon ? "mb-14" : "mb-2"} h-70`}
+        >
+          <div className="absolute inset-0 overflow-hidden bg-zinc-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={cover}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="relative mx-auto h-full w-[720px] max-w-full">
+            {icon ? (
+              <div className="absolute -bottom-[51px] left-0 flex h-[102px] w-[78px] items-center justify-center text-[78px] leading-none">
+                {icon}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {!cover && icon ? (
+        <div className="mx-auto w-[720px] max-w-full">
+          <div className="flex h-[102px] w-[78px] items-center justify-center text-[78px] leading-none">
+            {icon}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mx-auto mb-2 flex h-10 w-[720px] max-w-full items-center gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            if (cover) {
+              setCoverOpen(true);
+            } else {
+              void addRandomCover();
+            }
+          }}
+          disabled={savingProperties}
+        >
+          <ImageIcon />
+          {cover ? t("editor.changeCover") : t("editor.addCover")}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setIconOpen(true)}
+          disabled={savingProperties}
+        >
+          <SmilePlus />
+          {icon ? t("editor.changeIcon") : t("editor.addIcon")}
+        </Button>
+      </div>
+
       <input
         value={draftTitle}
         onChange={(event) => setDraftTitle(event.target.value)}
@@ -333,6 +500,23 @@ export default function PageEditor({
           onClose={() => setHistoryOpen(false)}
         />
       )}
+
+      <PageCoverDialog
+        open={coverOpen}
+        coverUrl={cover}
+        onClose={() => setCoverOpen(false)}
+        onSelect={(url) => void updateCover(url)}
+        onRemove={() => void removeCover()}
+        onUploadImage={onUploadImage}
+      />
+
+      <PageIconDialog
+        open={iconOpen}
+        icon={icon}
+        onClose={() => setIconOpen(false)}
+        onSelect={(nextIcon) => void updateIcon(nextIcon)}
+        onRemove={() => void removeIcon()}
+      />
     </main>
   );
 }

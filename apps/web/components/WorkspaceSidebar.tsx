@@ -15,28 +15,18 @@ import {
   Search,
   Settings,
   Trash2,
-  TrendingUp,
   User as UserIcon,
-  UserPlus,
   X
 } from "lucide-react";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import LanguageSwitch from "@/components/LanguageSwitch";
 import PageTree from "@/components/PageTree";
+import SettingsDialog from "@/components/SettingsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
@@ -188,38 +178,10 @@ export default function WorkspaceSidebar({
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem disabled>
-                    <TrendingUp size={14} />
-                    Upgrade
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                     <Settings size={14} />
                     Settings
                   </DropdownMenuItem>
-                  <DropdownMenuItem disabled>
-                    <UserPlus size={14} />
-                    Invite members
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled>
-                    <Plus size={14} />
-                    Add account
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
-                  {workspaces.map((workspace) => (
-                    <DropdownMenuItem
-                      key={workspace.id}
-                      onClick={() => onSelectWorkspace(workspace.id)}
-                    >
-                      <span className="min-w-0 flex-1 truncate">
-                        {workspace.icon ? `${workspace.icon} ` : ""}
-                        {workspace.name}
-                      </span>
-                      {workspace.id === activeWorkspaceId && (
-                        <Check size={14} />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={onLogout}>
                     <LogOut size={14} />
@@ -492,20 +454,14 @@ export default function WorkspaceSidebar({
 
       </aside>
 
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Settings</DialogTitle>
-            <DialogDescription>
-              Choose your preferred language.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm">Language</span>
-            <LanguageSwitch />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        user={user}
+        workspace={workspaces.find(
+          (workspace) => workspace.id === activeWorkspaceId
+        )}
+      />
 
       <ConfirmDialog
         open={pendingDeleteWorkspaceId !== null}

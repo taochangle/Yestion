@@ -392,6 +392,19 @@ export default function DashboardPage() {
     await loadBlocks(activeWorkspaceId);
   }
 
+  async function handleUpdateBlockProperties(
+    blockId: string,
+    properties: Record<string, unknown>
+  ) {
+    const result = await apiFetch<{ block: Block }>(`/api/blocks/${blockId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ properties })
+    });
+    setBlocks((current) =>
+      updateBlockProperties(current, blockId, result.block.properties)
+    );
+  }
+
   const handleSaveContent = useCallback(
     async (blockId: string, document: JSONContent) => {
       await apiFetch<{ block: Block }>(`/api/blocks/${blockId}`, {
@@ -514,6 +527,7 @@ export default function DashboardPage() {
             selectedBlock={selectedBlock}
             breadcrumb={breadcrumb}
             onUpdateTitle={handleUpdateTitle}
+            onUpdateProperties={handleUpdateBlockProperties}
             onSaveContent={handleSaveContent}
             onUploadImage={handleUploadImage}
             onUploadFile={handleUploadFile}
