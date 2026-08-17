@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/my-notion/notionclone/api/internal/service"
+	"github.com/my-notion/yestion/api/internal/service"
 )
 
 type ShareHandler struct {

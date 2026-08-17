@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/my-notion/notionclone/api/internal/repository"
-	"github.com/my-notion/notionclone/api/internal/service"
+	"github.com/my-notion/yestion/api/internal/repository"
+	"github.com/my-notion/yestion/api/internal/service"
 )
 
 type BlockHandler struct {

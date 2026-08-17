@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/my-notion/notionclone/api/internal/model"
+	"github.com/my-notion/yestion/api/internal/model"
 	"gorm.io/gorm"
 )
 

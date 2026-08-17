@@ -29,8 +29,8 @@ import {
 } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
-const ACTIVE_WORKSPACE_KEY = "notionclone.activeWorkspaceId";
-const ACTIVE_BLOCK_PREFIX = "notionclone.activeBlockId:";
+const ACTIVE_WORKSPACE_KEY = "yestion.activeWorkspaceId";
+const ACTIVE_BLOCK_PREFIX = "yestion.activeBlockId:";
 
 function activeBlockKey(workspaceId: string) {
   return `${ACTIVE_BLOCK_PREFIX}${workspaceId}`;

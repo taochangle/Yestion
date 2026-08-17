@@ -17,11 +17,11 @@ type I18nContextValue = {
   t: (key: string, vars?: Record<string, string | number>) => string;
 };
 
-const STORAGE_KEY = "notionclone.locale";
+const STORAGE_KEY = "yestion.locale";
 
 const messages: Record<Locale, Record<string, string>> = {
   en: {
-    "app.name": "NotionClone",
+    "app.name": "Yestion",
     "common.workspace": "Workspace",
     "common.email": "Email",
     "common.password": "Password",
@@ -36,7 +36,7 @@ const messages: Record<Locale, Record<string, string>> = {
     "home.description": "A Notion-inspired workspace with nested pages, blocks, and databases.",
     "auth.login": "Log in",
     "auth.register": "Register",
-    "auth.loginSubtitle": "Use the account you registered for NotionClone.",
+    "auth.loginSubtitle": "Use the account you registered for Yestion.",
     "auth.registerSubtitle": "Start building your workspace.",
     "auth.loggingIn": "Logging in...",
     "auth.creatingAccount": "Creating account...",
@@ -178,7 +178,7 @@ const messages: Record<Locale, Record<string, string>> = {
     "settings.off": "Off",
     "settings.appearance": "Appearance",
     "settings.useSystemAppearance": "Use system settings",
-    "settings.useSystemAppearanceDescription": "Choose how NotionClone looks on this device.",
+    "settings.useSystemAppearanceDescription": "Choose how Yestion looks on this device.",
     "settings.highContrast": "High contrast",
     "settings.highContrastDescription": "Increase contrast for improved display clarity.",
     "settings.inputOptions": "Input options",
@@ -293,7 +293,7 @@ const messages: Record<Locale, Record<string, string>> = {
     "settings.workspaceNameDescription": "Your workspace name can be up to 65 characters."
   },
   zh: {
-    "app.name": "NotionClone",
+    "app.name": "Yestion",
     "common.workspace": "工作区",
     "common.email": "邮箱",
     "common.password": "密码",
@@ -308,7 +308,7 @@ const messages: Record<Locale, Record<string, string>> = {
     "home.description": "一个受 Notion 启发的工作区，支持嵌套页面、块和数据库。",
     "auth.login": "登录",
     "auth.register": "注册",
-    "auth.loginSubtitle": "使用你注册的 NotionClone 账号登录。",
+    "auth.loginSubtitle": "使用你注册的 Yestion 账号登录。",
     "auth.registerSubtitle": "开始搭建你的工作区。",
     "auth.loggingIn": "登录中...",
     "auth.creatingAccount": "创建中...",
@@ -450,7 +450,7 @@ const messages: Record<Locale, Record<string, string>> = {
     "settings.off": "关",
     "settings.appearance": "外观",
     "settings.useSystemAppearance": "使用系统设置",
-    "settings.useSystemAppearanceDescription": "在此设备上选择 NotionClone 的外观。",
+    "settings.useSystemAppearanceDescription": "在此设备上选择 Yestion 的外观。",
     "settings.highContrast": "高对比度",
     "settings.highContrastDescription": "提高对比度，以提升显示清晰度。",
     "settings.inputOptions": "输入选项",

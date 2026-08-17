@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/my-notion/notionclone/api/internal/model"
-	"github.com/my-notion/notionclone/api/internal/repository"
+	"github.com/my-notion/yestion/api/internal/model"
+	"github.com/my-notion/yestion/api/internal/repository"
 )
 
 var (

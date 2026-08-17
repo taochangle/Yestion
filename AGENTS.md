@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-NotionClone is a web-based workspace inspired by Notion. It uses a block-first
+Yestion is a web-based workspace inspired by Notion. It uses a block-first
 data model, Yjs-based collaboration, and a Go API built with Gin and GORM
 backed by PostgreSQL. Planning documents live under [`docs/`](docs/).
 

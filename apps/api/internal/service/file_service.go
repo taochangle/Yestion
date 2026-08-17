@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/my-notion/notionclone/api/internal/config"
+	"github.com/my-notion/yestion/api/internal/config"
 )
 
 type File struct {

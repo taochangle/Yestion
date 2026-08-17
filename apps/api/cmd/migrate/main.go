@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/my-notion/notionclone/api/internal/config"
-	"github.com/my-notion/notionclone/api/internal/database"
+	"github.com/my-notion/yestion/api/internal/config"
+	"github.com/my-notion/yestion/api/internal/database"
 )
 
 func main() {

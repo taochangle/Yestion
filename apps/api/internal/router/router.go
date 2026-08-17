@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/my-notion/notionclone/api/internal/config"
-	"github.com/my-notion/notionclone/api/internal/handler"
-	"github.com/my-notion/notionclone/api/internal/middleware"
+	"github.com/my-notion/yestion/api/internal/config"
+	"github.com/my-notion/yestion/api/internal/handler"
+	"github.com/my-notion/yestion/api/internal/middleware"
 )
 
 func New(

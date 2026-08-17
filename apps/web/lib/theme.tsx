@@ -16,7 +16,7 @@ type ThemeContextValue = {
   setTheme: (theme: Theme) => void;
 };
 
-const STORAGE_KEY = "notionclone.theme";
+const STORAGE_KEY = "yestion.theme";
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function systemTheme(): Exclude<Theme, "system"> {

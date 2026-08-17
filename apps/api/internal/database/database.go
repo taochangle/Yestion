@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 
-	"github.com/my-notion/notionclone/api/internal/model"
+	"github.com/my-notion/yestion/api/internal/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

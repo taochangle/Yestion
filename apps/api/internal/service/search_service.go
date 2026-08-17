@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/my-notion/notionclone/api/internal/repository"
+	"github.com/my-notion/yestion/api/internal/repository"
 )
 
 type SearchResult struct {

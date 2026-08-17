@@ -1,6 +1,6 @@
-# NotionClone
+# Yestion
 
-NotionClone is a Notion-inspired workspace with a Go/Gin/GORM API and a
+Yestion is a Notion-inspired workspace with a Go/Gin/GORM API and a
 Next.js frontend.
 
 ## Quick Start

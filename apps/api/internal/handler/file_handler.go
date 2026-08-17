@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
-	"github.com/my-notion/notionclone/api/internal/service"
+	"github.com/my-notion/yestion/api/internal/service"
 )
 
 const maxUploadSize = 50 << 20

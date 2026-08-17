@@ -3,12 +3,12 @@ package main
 import (
 	"log"
 
-	"github.com/my-notion/notionclone/api/internal/config"
-	"github.com/my-notion/notionclone/api/internal/database"
-	"github.com/my-notion/notionclone/api/internal/handler"
-	"github.com/my-notion/notionclone/api/internal/repository"
-	"github.com/my-notion/notionclone/api/internal/router"
-	"github.com/my-notion/notionclone/api/internal/service"
+	"github.com/my-notion/yestion/api/internal/config"
+	"github.com/my-notion/yestion/api/internal/database"
+	"github.com/my-notion/yestion/api/internal/handler"
+	"github.com/my-notion/yestion/api/internal/repository"
+	"github.com/my-notion/yestion/api/internal/router"
+	"github.com/my-notion/yestion/api/internal/service"
 )
 
 func main() {

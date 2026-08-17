@@ -1,4 +1,4 @@
-module github.com/my-notion/notionclone/api
+module github.com/my-notion/yestion/api
 
 go 1.25.0
 
