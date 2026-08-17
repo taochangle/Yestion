@@ -99,6 +99,9 @@ export default function PageEditor({
   const [iconOpen, setIconOpen] = useState(false);
   const [savingProperties, setSavingProperties] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savingIndicatorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const blockIdRef = useRef(selectedBlock?.id ?? null);
   const saveContentRef = useRef(onSaveContent);
   const latestDocumentRef = useRef<JSONContent | null>(null);
@@ -131,6 +134,9 @@ export default function PageEditor({
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
+      }
+      if (savingIndicatorTimerRef.current) {
+        clearTimeout(savingIndicatorTimerRef.current);
       }
     };
   }, []);
@@ -166,7 +172,12 @@ export default function PageEditor({
           return;
         }
 
+        if (savingIndicatorTimerRef.current) {
+          clearTimeout(savingIndicatorTimerRef.current);
+          savingIndicatorTimerRef.current = null;
+        }
         setSaving(true);
+        const startedAt = Date.now();
         const saveOperations: Promise<unknown>[] = [];
         const title = draftTitleRef.current.trim();
         if (title && title !== selectedTitleRef.current) {
@@ -183,7 +194,12 @@ export default function PageEditor({
           saveOperations.push(saveContentRef.current(blockId, document));
         }
 
-        void Promise.all(saveOperations).finally(() => setSaving(false));
+        void Promise.all(saveOperations).finally(() => {
+          const remaining = Math.max(0, 2000 - (Date.now() - startedAt));
+          savingIndicatorTimerRef.current = setTimeout(() => {
+            setSaving(false);
+          }, remaining);
+        });
       }
     }
 
