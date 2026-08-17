@@ -16,6 +16,7 @@ import {
   History,
   Image as ImageIcon,
   Link,
+  Loader2,
   MoreHorizontal,
   PanelLeftOpen,
   Share2,
@@ -165,10 +166,11 @@ export default function PageEditor({
           return;
         }
 
+        setSaving(true);
+        const saveOperations: Promise<unknown>[] = [];
         const title = draftTitleRef.current.trim();
         if (title && title !== selectedTitleRef.current) {
-          setSaving(true);
-          void onUpdateTitle(blockId, title).finally(() => setSaving(false));
+          saveOperations.push(onUpdateTitle(blockId, title));
         }
 
         if (saveTimerRef.current) {
@@ -178,8 +180,10 @@ export default function PageEditor({
 
         const document = latestDocumentRef.current;
         if (document) {
-          void saveContentRef.current(blockId, document);
+          saveOperations.push(saveContentRef.current(blockId, document));
         }
+
+        void Promise.all(saveOperations).finally(() => setSaving(false));
       }
     }
 
@@ -337,8 +341,18 @@ export default function PageEditor({
           {breadcrumb.map((item, index) => (
             <span key={item.id} className="flex items-center gap-1">
               {index > 0 && <span>/</span>}
-              <span className={index === breadcrumb.length - 1 ? "text-zinc-900" : ""}>
+              <span
+                className={`flex items-center gap-1.5 ${
+                  index === breadcrumb.length - 1 ? "text-zinc-900" : ""
+                }`}
+              >
                 {item.title || t("editor.placeholder")}
+                {index === breadcrumb.length - 1 && saving ? (
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <Loader2 size={12} className="animate-spin" />
+                    {t("editor.saving")}
+                  </span>
+                ) : null}
               </span>
             </span>
           ))}
