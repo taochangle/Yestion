@@ -9,7 +9,11 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "Yestion",
-  description: "A Notion-inspired workspace"
+  description: "A Notion-inspired workspace",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png"
+  }
 };
 
 export default function RootLayout({
