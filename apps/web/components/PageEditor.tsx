@@ -52,6 +52,7 @@ import { formatRelativeTime } from "@/lib/time";
 type PageEditorProps = {
   selectedBlock: BlockNode | null;
   breadcrumb: BreadcrumbItem[];
+  editorRef?: React.RefObject<Editor | null>;
   onUpdateTitle: (blockId: string, title: string) => Promise<void>;
   onUpdateProperties: (
     blockId: string,
@@ -72,6 +73,7 @@ type PageEditorProps = {
 export default function PageEditor({
   selectedBlock,
   breadcrumb,
+  editorRef: editorRefProp,
   onUpdateTitle,
   onUpdateProperties,
   onSaveContent,
@@ -108,7 +110,8 @@ export default function PageEditor({
   const draftTitleRef = useRef(draftTitle);
   const selectedTitleRef = useRef(selectedBlock?.properties.title ?? "");
   const markdownInputRef = useRef<HTMLInputElement>(null);
-  const editorRef = useRef<Editor | null>(null);
+  const localEditorRef = useRef<Editor | null>(null);
+  const editorRef = editorRefProp ?? localEditorRef;
 
   useEffect(() => {
     blockIdRef.current = selectedBlock?.id ?? null;

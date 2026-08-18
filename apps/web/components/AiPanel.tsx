@@ -1,7 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Maximize2, MessageCircle, PanelRight, Plus, X } from "lucide-react";
+import {
+  FilePlus2,
+  FolderPlus,
+  Maximize2,
+  MessageCircle,
+  PanelRight,
+  Plus,
+  X
+} from "lucide-react";
 import ChatConversation from "@/components/chat-conversation";
 import { useChat } from "@/components/chat-context";
 import { Button } from "@/components/ui/button";
@@ -23,6 +31,9 @@ export default function AiPanel({
   variant,
   workspaceName,
   onOpenSource,
+  onInsertToDocument,
+  onDuplicatePage,
+  onInsertSubPage,
   onFloat,
   onDock,
   onClose
@@ -30,6 +41,9 @@ export default function AiPanel({
   variant: "sidebar" | "float";
   workspaceName?: string;
   onOpenSource?: (blockId: string) => void;
+  onInsertToDocument?: (markdown: string) => void;
+  onDuplicatePage?: () => void;
+  onInsertSubPage?: () => void;
   onFloat: () => void;
   onDock: () => void;
   onClose: () => void;
@@ -115,6 +129,39 @@ export default function AiPanel({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            {onDuplicatePage || onInsertSubPage ? (
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="h-7 w-7 cursor-pointer p-0"
+                      >
+                        <FilePlus2 />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>{t("ai.documentActions")}</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end" className="w-44">
+                  {onDuplicatePage ? (
+                    <DropdownMenuItem onClick={onDuplicatePage}>
+                      <FolderPlus size={14} />
+                      {t("ai.duplicatePage")}
+                    </DropdownMenuItem>
+                  ) : null}
+                  {onInsertSubPage ? (
+                    <DropdownMenuItem onClick={onInsertSubPage}>
+                      <Plus size={14} />
+                      {t("ai.insertSubPage")}
+                    </DropdownMenuItem>
+                  ) : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -136,6 +183,7 @@ export default function AiPanel({
       <ChatConversation
         workspaceName={workspaceName}
         onOpenSource={onOpenSource}
+        onInsertToDocument={onInsertToDocument}
       />
     </aside>
   );

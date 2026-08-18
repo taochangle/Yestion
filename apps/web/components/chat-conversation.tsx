@@ -12,7 +12,14 @@ import {
 } from "@ant-design/x";
 import { XMarkdown } from "@ant-design/x-markdown";
 import { Avatar } from "antd";
-import { Bot, Brain, BookOpen, RefreshCw, User } from "lucide-react";
+import {
+  Bot,
+  Brain,
+  BookOpen,
+  FilePlus2,
+  RefreshCw,
+  User
+} from "lucide-react";
 import { useChat } from "@/components/chat-context";
 import type { ChatMessage } from "@/components/chat-provider";
 import { useI18n } from "@/lib/i18n";
@@ -23,12 +30,14 @@ function AssistantMessage({
   content,
   workspaceName,
   onOpenSource,
-  onRegenerate
+  onRegenerate,
+  onInsertToDocument
 }: {
   content: RenderedMessage;
   workspaceName: string;
   onOpenSource?: (blockId: string) => void;
   onRegenerate?: (messageId: string) => void;
+  onInsertToDocument?: (markdown: string) => void;
 }) {
   const { t } = useI18n();
   const streaming =
@@ -63,6 +72,16 @@ function AssistantMessage({
       ) : null}
       <Actions
         items={[
+          ...(onInsertToDocument
+            ? [
+                {
+                  key: "insert",
+                  icon: <FilePlus2 size={14} />,
+                  label: t("ai.insertToDocument"),
+                  onItemClick: () => onInsertToDocument(content.content)
+                }
+              ]
+            : []),
           {
             key: "copy",
             actionRender: () => <Actions.Copy text={content.content} />
@@ -85,10 +104,12 @@ function AssistantMessage({
 
 export default function ChatConversation({
   workspaceName,
-  onOpenSource
+  onOpenSource,
+  onInsertToDocument
 }: {
   workspaceName?: string;
   onOpenSource?: (blockId: string) => void;
+  onInsertToDocument?: (markdown: string) => void;
 }) {
   const { t } = useI18n();
   const {
@@ -158,6 +179,7 @@ export default function ChatConversation({
             workspaceName={workspaceName || ""}
             onOpenSource={onOpenSource}
             onRegenerate={handleRegenerate}
+            onInsertToDocument={onInsertToDocument}
           />
         )
       },
@@ -169,7 +191,7 @@ export default function ChatConversation({
         contentRender: (content: RenderedMessage) => content.content
       }
     }),
-    [handleRegenerate, onOpenSource, workspaceName]
+    [handleRegenerate, onInsertToDocument, onOpenSource, workspaceName]
   );
 
   const items = messages.map(({ id, message, status }) => ({

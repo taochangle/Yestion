@@ -1,8 +1,8 @@
 "use client";
 
-import { type JSONContent } from "@tiptap/react";
+import { type Editor, type JSONContent } from "@tiptap/react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { XProvider } from "@ant-design/x";
 import { theme as antdTheme } from "antd";
 import enUS from "antd/locale/en_US";
@@ -102,6 +102,18 @@ export default function DashboardPage({
   const [aiMode, setAiMode] = useState<"hidden" | "float" | "sidebar">(
     "hidden"
   );
+  const documentEditorRef = useRef<Editor | null>(null);
+
+  const handleInsertToEditor = useCallback((markdown: string) => {
+    const editor = documentEditorRef.current;
+    if (editor && markdown) {
+      editor
+        .chain()
+        .focus()
+        .insertContent(markdown, { contentType: "markdown" })
+        .run();
+    }
+  }, []);
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_MODE_KEY, sidebarMode);
@@ -186,6 +198,12 @@ export default function DashboardPage({
     () => findNode(blocks, selectedBlockId),
     [blocks, selectedBlockId]
   );
+
+  function handleInsertSubPage() {
+    if (selectedBlock) {
+      void handleCreatePage(selectedBlock.id);
+    }
+  }
 
   const breadcrumb = useMemo(
     () => {
@@ -596,6 +614,7 @@ export default function DashboardPage({
               key={selectedBlock?.id ?? "empty"}
               selectedBlock={selectedBlock}
               breadcrumb={breadcrumb}
+              editorRef={documentEditorRef}
               onUpdateTitle={handleUpdateTitle}
               onUpdateProperties={handleUpdateBlockProperties}
               onSaveContent={handleSaveContent}
@@ -625,6 +644,9 @@ export default function DashboardPage({
                 workspaces.find((item) => item.id === activeWorkspaceId)?.name
               }
               onOpenSource={handleOpenChatSource}
+              onInsertToDocument={handleInsertToEditor}
+              onDuplicatePage={handleDuplicatePage}
+              onInsertSubPage={handleInsertSubPage}
               onFloat={() => setAiMode("float")}
               onDock={() => setAiMode("sidebar")}
               onClose={() => setAiMode("hidden")}
@@ -650,6 +672,9 @@ export default function DashboardPage({
               workspaces.find((item) => item.id === activeWorkspaceId)?.name
             }
             onOpenSource={handleOpenChatSource}
+            onInsertToDocument={handleInsertToEditor}
+            onDuplicatePage={handleDuplicatePage}
+            onInsertSubPage={handleInsertSubPage}
             onFloat={() => setAiMode("float")}
             onDock={() => setAiMode("sidebar")}
             onClose={() => setAiMode("hidden")}
