@@ -647,6 +647,12 @@ export default function DashboardPage({
               onInsertToDocument={handleInsertToEditor}
               onDuplicatePage={handleDuplicatePage}
               onInsertSubPage={handleInsertSubPage}
+              onCreateWorkspace={handleCreateWorkspace}
+              onDeleteDocument={() => {
+                if (selectedBlock) {
+                  requestDeletePage(selectedBlock.id);
+                }
+              }}
               onFloat={() => setAiMode("float")}
               onDock={() => setAiMode("sidebar")}
               onClose={() => setAiMode("hidden")}
@@ -675,6 +681,12 @@ export default function DashboardPage({
             onInsertToDocument={handleInsertToEditor}
             onDuplicatePage={handleDuplicatePage}
             onInsertSubPage={handleInsertSubPage}
+            onCreateWorkspace={handleCreateWorkspace}
+            onDeleteDocument={() => {
+              if (selectedBlock) {
+                requestDeletePage(selectedBlock.id);
+              }
+            }}
             onFloat={() => setAiMode("float")}
             onDock={() => setAiMode("sidebar")}
             onClose={() => setAiMode("hidden")}

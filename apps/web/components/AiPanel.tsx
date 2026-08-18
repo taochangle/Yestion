@@ -8,8 +8,10 @@ import {
   MessageCircle,
   PanelRight,
   Plus,
+  Trash2,
   X
 } from "lucide-react";
+import { useState } from "react";
 import ChatConversation from "@/components/chat-conversation";
 import { useChat } from "@/components/chat-context";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,16 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useI18n } from "@/lib/i18n";
 
 export default function AiPanel({
@@ -34,6 +46,8 @@ export default function AiPanel({
   onInsertToDocument,
   onDuplicatePage,
   onInsertSubPage,
+  onCreateWorkspace,
+  onDeleteDocument,
   onFloat,
   onDock,
   onClose
@@ -44,12 +58,17 @@ export default function AiPanel({
   onInsertToDocument?: (markdown: string) => void;
   onDuplicatePage?: () => void;
   onInsertSubPage?: () => void;
+  onCreateWorkspace?: (name: string) => Promise<void>;
+  onDeleteDocument?: () => void;
   onFloat: () => void;
   onDock: () => void;
   onClose: () => void;
 }) {
   const { t } = useI18n();
   const router = useRouter();
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const { conversations, activeConversationKey, handleNewConversation } =
     useChat();
   const title =
@@ -129,7 +148,10 @@ export default function AiPanel({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            {onDuplicatePage || onInsertSubPage ? (
+            {onDuplicatePage ||
+            onInsertSubPage ||
+            onCreateWorkspace ||
+            onDeleteDocument ? (
               <DropdownMenu>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -159,6 +181,26 @@ export default function AiPanel({
                       {t("ai.insertSubPage")}
                     </DropdownMenuItem>
                   ) : null}
+                  {onCreateWorkspace ? (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setNewWorkspaceName("");
+                        setWorkspaceOpen(true);
+                      }}
+                    >
+                      <FolderPlus size={14} />
+                      {t("ai.newWorkspace")}
+                    </DropdownMenuItem>
+                  ) : null}
+                  {onDeleteDocument ? (
+                    <DropdownMenuItem
+                      onClick={onDeleteDocument}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 size={14} />
+                      {t("ai.deleteDocument")}
+                    </DropdownMenuItem>
+                  ) : null}
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : null}
@@ -185,6 +227,59 @@ export default function AiPanel({
         onOpenSource={onOpenSource}
         onInsertToDocument={onInsertToDocument}
       />
+
+      <Dialog open={workspaceOpen} onOpenChange={setWorkspaceOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("ai.newWorkspace")}</DialogTitle>
+            <DialogDescription>
+              {t("ai.workspaceNameHint")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="ai-workspace-name">{t("common.name")}</Label>
+            <Input
+              id="ai-workspace-name"
+              value={newWorkspaceName}
+              onChange={(event) => setNewWorkspaceName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && newWorkspaceName.trim()) {
+                  void confirmCreateWorkspace();
+                }
+              }}
+              placeholder={t("ai.workspaceNamePlaceholder")}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setWorkspaceOpen(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              disabled={!newWorkspaceName.trim() || creatingWorkspace}
+              onClick={() => void confirmCreateWorkspace()}
+            >
+              {creatingWorkspace ? t("common.loading") : t("common.add")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </aside>
   );
+
+  async function confirmCreateWorkspace() {
+    if (!onCreateWorkspace || !newWorkspaceName.trim()) {
+      return;
+    }
+    setCreatingWorkspace(true);
+    try {
+      await onCreateWorkspace(newWorkspaceName.trim());
+      setWorkspaceOpen(false);
+    } finally {
+      setCreatingWorkspace(false);
+    }
+  }
 }
