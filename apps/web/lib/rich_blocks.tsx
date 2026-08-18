@@ -369,6 +369,7 @@ export const MathBlock = Node.create({
   group: "block",
   atom: true,
   inline: false,
+  markdownTokenName: "mathBlock",
 
   addAttributes() {
     return {
@@ -386,6 +387,30 @@ export const MathBlock = Node.create({
     return ["div", { "data-type": "math-block", ...HTMLAttributes }];
   },
 
+  markdownTokenizer: {
+    name: "mathBlock",
+    level: "block",
+    start: (src) => src.indexOf("$$"),
+    tokenize: (src) => {
+      const match = /^\$\$([\s\S]*?)\$\$/.exec(src);
+      if (!match) {
+        return undefined;
+      }
+      return {
+        type: "mathBlock",
+        raw: match[0],
+        expression: match[1].trim()
+      };
+    }
+  },
+
+  parseMarkdown: (token) => ({
+    type: "mathBlock",
+    attrs: { expression: token.expression }
+  }),
+
+  renderMarkdown: (node) => `$$\n${node.attrs?.expression ?? ""}\n$$`,
+
   addNodeView() {
     return ReactNodeViewRenderer(MathBlockView);
   }
@@ -396,6 +421,7 @@ export const InlineMath = Node.create({
   group: "inline",
   inline: true,
   atom: true,
+  markdownTokenName: "inlineMath",
 
   addAttributes() {
     return {
@@ -412,6 +438,30 @@ export const InlineMath = Node.create({
   renderHTML({ HTMLAttributes }) {
     return ["span", { "data-type": "inline-math", ...HTMLAttributes }];
   },
+
+  markdownTokenizer: {
+    name: "inlineMath",
+    level: "inline",
+    start: (src) => src.indexOf("$"),
+    tokenize: (src) => {
+      const match = /^\$([^$\n]+?)\$/.exec(src);
+      if (!match) {
+        return undefined;
+      }
+      return {
+        type: "inlineMath",
+        raw: match[0],
+        expression: match[1].trim()
+      };
+    }
+  },
+
+  parseMarkdown: (token) => ({
+    type: "inlineMath",
+    attrs: { expression: token.expression }
+  }),
+
+  renderMarkdown: (node) => `$${node.attrs?.expression ?? ""}$`,
 
   addNodeView() {
     return ReactNodeViewRenderer(InlineMathView);
