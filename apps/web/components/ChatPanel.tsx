@@ -208,7 +208,7 @@ export default function ChatPanel({
   }));
 
   return (
-    <main className="flex h-full min-h-0 flex-col px-4">
+    <main className="flex h-full min-h-0 min-w-0 flex-1 flex-col px-4">
       <div className="sticky top-0 z-20 -mx-4 flex items-center justify-between gap-3 bg-white px-4 pb-2 pt-2">
         <nav className="flex min-w-0 flex-wrap items-center gap-1 text-sm leading-none text-zinc-500">
           {sidebarCollapsed && (
@@ -313,7 +313,7 @@ export default function ChatPanel({
         )}
       </div>
 
-      <div className="shrink-0 border-t border-zinc-200 py-3 dark:border-zinc-800">
+      <div className="shrink-0 border-t border-zinc-200 p-3 dark:border-zinc-800">
         <Sender
           value={value}
           onChange={setValue}
@@ -322,7 +322,7 @@ export default function ChatPanel({
           onCancel={abort}
           disabled={!workspaceId}
           placeholder={t("chat.placeholder")}
-          className="mx-auto w-full max-w-3xl"
+          className="mx-auto max-w-3xl"
           suffix={false}
           footer={(actionNode) => (
             <div className="flex items-center justify-between gap-3 px-1 pb-1">
