@@ -60,7 +60,10 @@ export default function ChatPanel({
     isRequesting,
     abort,
     handleNewConversation,
-    deleteConversation
+    pendingDeleteConversationKey,
+    requestDeleteConversation,
+    confirmDeleteConversation,
+    cancelDeleteConversation
   } = useChat();
   const [value, setValue] = useState("");
 
@@ -144,7 +147,13 @@ export default function ChatPanel({
             okText={t("common.delete")}
             cancelText={t("common.cancel")}
             danger
-            onConfirm={() => deleteConversation(activeConversationKey)}
+            open={pendingDeleteConversationKey !== null}
+            onOpenChange={(next) => {
+              if (!next) {
+                cancelDeleteConversation();
+              }
+            }}
+            onConfirm={confirmDeleteConversation}
           >
             <Button
               type="button"
@@ -152,6 +161,7 @@ export default function ChatPanel({
               size="sm"
               className="h-7 w-7 cursor-pointer p-0"
               aria-label={t("chat.deleteConversation")}
+              onClick={() => requestDeleteConversation(activeConversationKey)}
             >
               <Trash2 />
             </Button>
