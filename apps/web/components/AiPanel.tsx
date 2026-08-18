@@ -6,6 +6,12 @@ import ChatConversation from "@/components/chat-conversation";
 import { useChat } from "@/components/chat-context";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -35,6 +41,14 @@ export default function AiPanel({
   const title =
     conversations.find((item) => item.key === activeConversationKey)?.label ??
     t("chat.title");
+  const modeIcon =
+    variant === "float" ? (
+      <MessageCircle />
+    ) : variant === "sidebar" ? (
+      <PanelRight />
+    ) : (
+      <Maximize2 />
+    );
 
   return (
     <aside
@@ -64,52 +78,43 @@ export default function AiPanel({
               </TooltipTrigger>
               <TooltipContent>{t("chat.newConversation")}</TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className={`h-7 w-7 cursor-pointer p-0 ${
-                    variant === "float" ? "bg-zinc-100 dark:bg-zinc-800" : ""
-                  }`}
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-7 w-7 cursor-pointer p-0"
+                    >
+                      {modeIcon}
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>{t("ai.switchMode")}</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem
                   onClick={onFloat}
+                  className={variant === "float" ? "bg-zinc-100 dark:bg-zinc-800" : ""}
                 >
-                  <MessageCircle />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t("ai.float")}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className={`h-7 w-7 cursor-pointer p-0 ${
-                    variant === "sidebar" ? "bg-zinc-100 dark:bg-zinc-800" : ""
-                  }`}
+                  <MessageCircle size={14} />
+                  {t("ai.float")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={onDock}
+                  className={variant === "sidebar" ? "bg-zinc-100 dark:bg-zinc-800" : ""}
                 >
-                  <PanelRight />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t("ai.sidebar")}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="h-7 w-7 cursor-pointer p-0"
-                  onClick={() => router.push("/chat")}
-                >
-                  <Maximize2 />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t("ai.fullscreen")}</TooltipContent>
-            </Tooltip>
+                  <PanelRight size={14} />
+                  {t("ai.sidebar")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/chat")}>
+                  <Maximize2 size={14} />
+                  {t("ai.fullscreen")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
