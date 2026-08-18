@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Actions,
   Bubble,
@@ -134,6 +134,19 @@ export default function ChatConversation({
     abort
   } = useChat();
   const [value, setValue] = useState("");
+  const bubbleListRef = useRef<React.ComponentRef<typeof Bubble.List>>(null);
+
+  useEffect(() => {
+    const list = bubbleListRef.current;
+    if (!list?.scrollBoxNativeElement) {
+      return;
+    }
+    try {
+      list.scrollTo?.({ top: "bottom", behavior: "auto" });
+    } catch {
+      // scroll box not ready yet; the next update will retry
+    }
+  }, [isRequesting, messages]);
 
   const handleSubmit = useCallback(
     (content: string) => {
@@ -237,6 +250,7 @@ export default function ChatConversation({
         ) : (
           <div className="mx-auto flex h-full w-full max-w-3xl flex-col px-4 py-6">
             <Bubble.List
+              ref={bubbleListRef}
               role={roleConfig}
               items={items}
               autoScroll
