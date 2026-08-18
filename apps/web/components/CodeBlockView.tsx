@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   NodeViewContent,
   NodeViewWrapper,
@@ -35,6 +35,20 @@ export default function CodeBlockView({
   const [copied, setCopied] = useState(false);
   const currentLanguage =
     (node.attrs.language as string | undefined) || "plaintext";
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        setOpen(false);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [open]);
 
   function selectLanguage(value: string) {
     updateAttributes({ language: value });
