@@ -39,7 +39,6 @@ import { useTheme } from "@/lib/theme";
 
 const ACTIVE_WORKSPACE_KEY = "yestion.activeWorkspaceId";
 const ACTIVE_BLOCK_PREFIX = "yestion.activeBlockId:";
-const SIDEBAR_MODE_KEY = "yestion.sidebarMode";
 
 function useResolvedTheme(): "light" | "dark" {
   const { theme } = useTheme();
@@ -88,17 +87,9 @@ export default function DashboardPage({
   const [templateOpen, setTemplateOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarMode, setSidebarMode] = useState<"home" | "chat">(() => {
-    if (initialMode) {
-      return initialMode;
-    }
-    if (typeof window !== "undefined") {
-      return window.localStorage.getItem(SIDEBAR_MODE_KEY) === "chat"
-        ? "chat"
-        : "home";
-    }
-    return "home";
-  });
+  const [sidebarMode, setSidebarMode] = useState<"home" | "chat">(
+    initialMode ?? "home"
+  );
   const [aiMode, setAiMode] = useState<"hidden" | "float" | "sidebar">(
     "hidden"
   );
@@ -115,9 +106,6 @@ export default function DashboardPage({
     }
   }, []);
 
-  useEffect(() => {
-    window.localStorage.setItem(SIDEBAR_MODE_KEY, sidebarMode);
-  }, [sidebarMode]);
   const [error, setError] = useState<string | null>(null);
 
   const loadBlocks = useCallback(async (workspaceId: string, preferredBlockId?: string) => {
@@ -591,7 +579,13 @@ export default function DashboardPage({
           onDeletePage={requestDeletePage}
           onMoveBlock={handleMoveBlock}
           onLogout={handleLogout}
-          onModeChange={setSidebarMode}
+          onModeChange={(mode) => {
+            setSidebarMode(mode);
+            const target = mode === "chat" ? "/chat" : "/";
+            if (window.location.pathname !== target) {
+              router.push(target);
+            }
+          }}
         />
 
         <div
