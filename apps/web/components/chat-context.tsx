@@ -30,18 +30,16 @@ const providerCache = new Map<string, YestionChatProvider>();
 
 function getProvider(
   conversationKey: string,
-  workspaceId: string,
   knowledgeEnabled: boolean,
   thinkingEnabled: boolean
 ): YestionChatProvider {
-  const cacheKey = `${workspaceId}:${knowledgeEnabled ? 1 : 0}:${thinkingEnabled ? 1 : 0}:${conversationKey}`;
+  const cacheKey = `${knowledgeEnabled ? 1 : 0}:${thinkingEnabled ? 1 : 0}:${conversationKey}`;
   let provider = providerCache.get(cacheKey);
   if (!provider) {
     provider = new YestionChatProvider({
       request: XRequest<ChatInput, ChatOutput, ChatMessage>("/api/chat", {
         manual: true,
         params: {
-          workspaceId,
           useKnowledge: knowledgeEnabled,
           thinking: thinkingEnabled
         }
@@ -157,7 +155,6 @@ export function ChatProvider({
   const { messages, onRequest, onReload, isRequesting, abort } = useXChat({
     provider: getProvider(
       activeConversationKey,
-      workspaceId,
       knowledgeEnabled,
       thinkingEnabled
     ),

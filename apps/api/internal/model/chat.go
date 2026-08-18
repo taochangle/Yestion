@@ -22,9 +22,11 @@ type ChatMessage struct {
 }
 
 type ChatSource struct {
-	DocumentID string  `json:"documentId"`
-	Title      string  `json:"title"`
-	Content    string  `json:"content"`
-	DocType    string  `json:"type"`
-	Score      float64 `json:"score"`
+	WorkspaceID   string  `json:"workspaceId"`
+	WorkspaceName string  `json:"workspaceName"`
+	DocumentID    string  `json:"documentId"`
+	Title         string  `json:"title"`
+	Content       string  `json:"content"`
+	DocType       string  `json:"type"`
+	Score         float64 `json:"score"`
 }

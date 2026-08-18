@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 
+	"github.com/my-notion/yestion/api/internal/model"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 )
@@ -25,12 +27,19 @@ type AIService interface {
 	Ready() error
 	StreamChat(
 		ctx context.Context,
-		workspaceID string,
+		workspaces []KnowledgeWorkspace,
 		messages []ChatMessage,
 		useKnowledge bool,
 		thinkingEnabled bool,
 		writer io.Writer,
 	) error
+}
+
+// KnowledgeWorkspace is a workspace whose collection may be searched for
+// knowledge. Workspace membership is enforced before building this list.
+type KnowledgeWorkspace struct {
+	ID   string
+	Name string
 }
 
 type aiService struct {
@@ -58,7 +67,7 @@ func (s *aiService) Ready() error {
 
 func (s *aiService) StreamChat(
 	ctx context.Context,
-	workspaceID string,
+	workspaces []KnowledgeWorkspace,
 	messages []ChatMessage,
 	useKnowledge bool,
 	thinkingEnabled bool,
@@ -74,28 +83,52 @@ func (s *aiService) StreamChat(
 	question := messages[len(messages)-1].Content
 	system := "你是 Yestion 的 AI 助手，帮助用户在个人工作区中查找信息、总结内容和回答问题。回答使用与问题相同的语言，保持简洁、准确。"
 
-	var hits []ZVecHit
-	if useKnowledge && s.zvec != nil && strings.TrimSpace(question) != "" {
-		var err error
-		hits, err = s.zvec.Search(ctx, workspaceID, question, s.topK)
-		if err != nil {
-			return fmt.Errorf("search local knowledge: %w", err)
+	var sources []model.ChatSource
+	if useKnowledge && s.zvec != nil && strings.TrimSpace(question) != "" && len(workspaces) > 0 {
+		for _, workspace := range workspaces {
+			hits, err := s.zvec.Search(ctx, workspace.ID, question, s.topK)
+			if err != nil {
+				return fmt.Errorf("search local knowledge: %w", err)
+			}
+			for _, hit := range filterSources(hits, s.maxScore) {
+				sources = append(sources, model.ChatSource{
+					WorkspaceID:   workspace.ID,
+					WorkspaceName: workspace.Name,
+					DocumentID:    hit.DocumentID,
+					Title:         hit.Title,
+					Content:       hit.Content,
+					DocType:       hit.Type,
+					Score:         hit.Score,
+				})
+			}
 		}
-		hits = filterSources(hits, s.maxScore)
+		sort.Slice(sources, func(i, j int) bool {
+			return sources[i].Score < sources[j].Score
+		})
+		if len(sources) > s.topK {
+			sources = sources[:s.topK]
+		}
 	}
-	if len(hits) > 0 {
+	if len(sources) > 0 {
 		var contextBuilder strings.Builder
 		contextBuilder.WriteString("\n\n以下是与你问题相关的本地文档内容：\n")
-		for i, hit := range hits {
-			fmt.Fprintf(&contextBuilder, "\n[文档 %d] %s\n%s\n", i+1, hit.Title, strings.TrimSpace(hit.Content))
+		for i, source := range sources {
+			fmt.Fprintf(
+				&contextBuilder,
+				"\n[文档 %d] %s（工作区：%s）\n%s\n",
+				i+1,
+				source.Title,
+				source.WorkspaceName,
+				strings.TrimSpace(source.Content),
+			)
 		}
 		contextBuilder.WriteString("\n请优先基于这些本地文档回答；如果文档中没有相关信息，请如实说明，不要编造。")
 		system += contextBuilder.String()
 	}
 
 	flusher, _ := writer.(http.Flusher)
-	if len(hits) > 0 {
-		if err := writeSSESources(writer, flusher, hits); err != nil {
+	if len(sources) > 0 {
+		if err := writeSSESources(writer, flusher, sources); err != nil {
 			return err
 		}
 	}
@@ -215,8 +248,8 @@ func writeSSE(writer io.Writer, flusher http.Flusher, content string, reasoning 
 
 // writeSSESources emits an SSE event with the workspace documents retrieved
 // for the current question, so the frontend can render them as Sources.
-func writeSSESources(writer io.Writer, flusher http.Flusher, hits []ZVecHit) error {
-	payload, err := json.Marshal(map[string]any{"sources": hits})
+func writeSSESources(writer io.Writer, flusher http.Flusher, sources []model.ChatSource) error {
+	payload, err := json.Marshal(map[string]any{"sources": sources})
 	if err != nil {
 		return err
 	}

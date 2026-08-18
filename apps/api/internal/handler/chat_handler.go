@@ -37,16 +37,28 @@ func (h *ChatHandler) Stream(c *gin.Context) {
 		return
 	}
 
+	var knowledgeWorkspaces []service.KnowledgeWorkspace
 	if request.UseKnowledge {
-		if request.WorkspaceID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "workspaceId is required when using workspace knowledge",
-			})
-			return
-		}
-		if _, err := h.workspaces.Get(c.Request.Context(), userID(c), request.WorkspaceID); err != nil {
-			c.JSON(http.StatusForbidden, gin.H{"error": "you do not have access to this workspace"})
-			return
+		uid := userID(c)
+		if request.WorkspaceID != "" {
+			workspace, err := h.workspaces.Get(c.Request.Context(), uid, request.WorkspaceID)
+			if err != nil {
+				c.JSON(http.StatusForbidden, gin.H{"error": "you do not have access to this workspace"})
+				return
+			}
+			knowledgeWorkspaces = []service.KnowledgeWorkspace{{ID: workspace.ID, Name: workspace.Name}}
+		} else {
+			workspaces, err := h.workspaces.List(c.Request.Context(), uid)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			for _, workspace := range workspaces {
+				knowledgeWorkspaces = append(knowledgeWorkspaces, service.KnowledgeWorkspace{
+					ID:   workspace.ID,
+					Name: workspace.Name,
+				})
+			}
 		}
 	}
 	if err := h.ai.Ready(); err != nil {
@@ -65,7 +77,7 @@ func (h *ChatHandler) Stream(c *gin.Context) {
 
 	if err := h.ai.StreamChat(
 		c.Request.Context(),
-		request.WorkspaceID,
+		knowledgeWorkspaces,
 		request.Messages,
 		request.UseKnowledge,
 		thinkingEnabled,

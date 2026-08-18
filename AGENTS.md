@@ -25,9 +25,10 @@ Vector search is a REST service: one Zvec collection per workspace, one
 document per page block. Embeddings are also persisted to PostgreSQL
 (`document_vectors`, pgvector). The Go API keeps both in sync on workspace and
 block create/update/delete. AI chat (`POST /api/chat`) streams OpenAI-compatible
-SSE. Conversations are user-scoped (not locked to a workspace); the workspace is
-only used when `useKnowledge` is set, which searches that workspace's Zvec
-collection and grounds the answer in the retrieved documents.
+SSE. Conversations are user-scoped (not locked to a workspace). When
+`useKnowledge` is set, the API searches the user's accessible workspaces'
+Zvec collections (membership enforced server-side) and grounds the answer in
+the retrieved documents, tagging each source with its workspace.
 
 ## Build, Test, and Development Commands
 

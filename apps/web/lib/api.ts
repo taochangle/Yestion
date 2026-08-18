@@ -192,6 +192,8 @@ export type ChatMessageRecord = {
 };
 
 export type ChatSourceRecord = {
+  workspaceId: string;
+  workspaceName: string;
   documentId: string;
   title: string;
   content: string;

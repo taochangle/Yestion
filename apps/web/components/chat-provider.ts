@@ -15,6 +15,8 @@ export type ChatMessage = {
 };
 
 export type ChatSource = {
+  workspaceId?: string;
+  workspaceName?: string;
   documentId: string;
   title: string;
   content: string;
@@ -23,7 +25,6 @@ export type ChatSource = {
 };
 
 export type ChatInput = {
-  workspaceId?: string;
   useKnowledge?: boolean;
   thinking?: boolean;
   messages?: Array<{

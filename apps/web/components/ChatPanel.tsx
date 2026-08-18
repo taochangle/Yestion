@@ -71,8 +71,10 @@ function AssistantMessage({
           title={t("chat.sourcesTitle", { count: content.sources.length })}
           items={content.sources.map((source) => ({
             key: source.documentId,
-            title: workspaceName
-              ? `${workspaceName} / ${source.title || t("editor.placeholder")}`
+            title: (source.workspaceName || workspaceName)
+              ? `${source.workspaceName || workspaceName} / ${
+                  source.title || t("editor.placeholder")
+                }`
               : source.title || t("editor.placeholder")
           }))}
           onClick={(item) => onOpenSource?.(String(item.key))}
