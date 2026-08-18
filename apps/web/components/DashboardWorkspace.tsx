@@ -200,6 +200,14 @@ export default function DashboardPage({
     }
   }
 
+  function handleOpenChatSource(blockId: string) {
+    const node = findNode(blocks, blockId);
+    if (node) {
+      handleSelectBlock(node);
+      setSidebarMode("home");
+    }
+  }
+
   async function handleSearchSelect(result: SearchResult) {
     if (result.workspaceId !== activeWorkspaceId) {
       setActiveWorkspaceId(result.workspaceId);
@@ -609,6 +617,7 @@ export default function DashboardPage({
             ]}
             sidebarCollapsed={sidebarCollapsed}
             onOpenSidebar={() => setSidebarCollapsed(false)}
+            onOpenSource={handleOpenChatSource}
           />
         </div>
       </div>

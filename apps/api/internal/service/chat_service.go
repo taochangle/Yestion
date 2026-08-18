@@ -17,7 +17,11 @@ type ChatHistoryService interface {
 	RenameConversation(ctx context.Context, userID, conversationID, title string) (*model.ChatConversation, error)
 	DeleteConversation(ctx context.Context, userID, conversationID string) error
 	ListMessages(ctx context.Context, userID, conversationID string) ([]model.ChatMessage, error)
-	AddMessage(ctx context.Context, userID, conversationID, role, content, reasoning string) (*model.ChatMessage, error)
+	AddMessage(
+		ctx context.Context,
+		userID, conversationID, role, content, reasoning string,
+		sources []model.ChatSource,
+	) (*model.ChatMessage, error)
 }
 
 type chatHistoryService struct {
@@ -104,6 +108,7 @@ func (s *chatHistoryService) ListMessages(ctx context.Context, userID, conversat
 func (s *chatHistoryService) AddMessage(
 	ctx context.Context,
 	userID, conversationID, role, content, reasoning string,
+	sources []model.ChatSource,
 ) (*model.ChatMessage, error) {
 	conversation, err := s.chats.FindConversationByID(ctx, conversationID)
 	if err != nil {
@@ -121,6 +126,7 @@ func (s *chatHistoryService) AddMessage(
 		Role:           role,
 		Content:        content,
 		Reasoning:      reasoning,
+		Sources:        sources,
 	}
 	if err := s.chats.CreateMessage(ctx, message); err != nil {
 		return nil, err

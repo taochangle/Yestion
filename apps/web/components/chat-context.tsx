@@ -182,7 +182,10 @@ export function ChatProvider({
             message: {
               role: record.role,
               content: record.content,
-              ...(record.reasoning ? { reasoning: record.reasoning } : {})
+              ...(record.reasoning ? { reasoning: record.reasoning } : {}),
+              ...(record.sources?.length
+                ? { sources: record.sources }
+                : {})
             },
             status: "success" as const
           };
@@ -242,7 +245,8 @@ export function ChatProvider({
           body: JSON.stringify({
             role: "assistant",
             content: message.content,
-            reasoning: message.reasoning ?? ""
+            reasoning: message.reasoning ?? "",
+            sources: message.sources ?? []
           })
         }).catch(() => {});
       }

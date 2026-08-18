@@ -11,6 +11,15 @@ export type ChatMessage = {
   role: "user" | "assistant" | "system";
   content: string;
   reasoning?: string;
+  sources?: ChatSource[];
+};
+
+export type ChatSource = {
+  documentId: string;
+  title: string;
+  content: string;
+  type: string;
+  score: number;
 };
 
 export type ChatInput = {
@@ -63,6 +72,26 @@ export class YestionChatProvider extends AbstractChatProvider<
     info: TransformMessage<ChatMessage, ChatOutput>
   ): ChatMessage {
     const { originMessage, chunk } = info;
+
+    if (chunk?.event === "sources") {
+      try {
+        const raw = chunk.data as string | undefined;
+        if (raw) {
+          const parsed = JSON.parse(raw) as { sources?: ChatSource[] };
+          return {
+            role: "assistant",
+            content: originMessage?.content || "",
+            ...(originMessage?.reasoning
+              ? { reasoning: originMessage.reasoning }
+              : {}),
+            sources: parsed.sources ?? []
+          };
+        }
+      } catch {
+        // ignore malformed sources frame
+      }
+    }
+
     let content = "";
     let reasoning = "";
 
@@ -90,7 +119,8 @@ export class YestionChatProvider extends AbstractChatProvider<
     return {
       role: "assistant",
       content: `${originMessage?.content || ""}${content}`,
-      reasoning: `${originMessage?.reasoning || ""}${reasoning}`
+      reasoning: `${originMessage?.reasoning || ""}${reasoning}`,
+      ...(originMessage?.sources ? { sources: originMessage.sources } : {})
     };
   }
 }

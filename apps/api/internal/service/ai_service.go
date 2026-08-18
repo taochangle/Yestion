@@ -88,6 +88,13 @@ func (s *aiService) StreamChat(
 		system += contextBuilder.String()
 	}
 
+	flusher, _ := writer.(http.Flusher)
+	if useSearch && len(hits) > 0 {
+		if err := writeSSESources(writer, flusher, hits); err != nil {
+			return err
+		}
+	}
+
 	apiMessages := make([]openai.ChatCompletionMessageParamUnion, 0, len(messages)+1)
 	apiMessages = append(apiMessages, openai.SystemMessage(system))
 	for _, message := range messages {
@@ -108,7 +115,6 @@ func (s *aiService) StreamChat(
 		Messages: apiMessages,
 	})
 
-	flusher, _ := writer.(http.Flusher)
 	for stream.Next() {
 		chunk := stream.Current()
 		for _, choice := range chunk.Choices {
@@ -171,6 +177,22 @@ func writeSSE(writer io.Writer, flusher http.Flusher, content string, reasoning 
 		frame = "data: " + string(payload)
 	}
 	if _, err := fmt.Fprintf(writer, "%s\n\n", frame); err != nil {
+		return err
+	}
+	if flusher != nil {
+		flusher.Flush()
+	}
+	return nil
+}
+
+// writeSSESources emits an SSE event with the workspace documents retrieved
+// for the current question, so the frontend can render them as Sources.
+func writeSSESources(writer io.Writer, flusher http.Flusher, hits []ZVecHit) error {
+	payload, err := json.Marshal(map[string]any{"sources": hits})
+	if err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(writer, "event: sources\ndata: %s\n\n", payload); err != nil {
 		return err
 	}
 	if flusher != nil {

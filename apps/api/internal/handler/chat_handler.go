@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/my-notion/yestion/api/internal/model"
 	"github.com/my-notion/yestion/api/internal/service"
 )
 
@@ -149,9 +150,10 @@ func (h *ChatHandler) ListMessages(c *gin.Context) {
 }
 
 type addMessageRequest struct {
-	Role      string `json:"role" binding:"required"`
-	Content   string `json:"content"`
-	Reasoning string `json:"reasoning"`
+	Role      string             `json:"role" binding:"required"`
+	Content   string             `json:"content"`
+	Reasoning string             `json:"reasoning"`
+	Sources   []model.ChatSource `json:"sources"`
 }
 
 func (h *ChatHandler) AddMessage(c *gin.Context) {
@@ -167,6 +169,7 @@ func (h *ChatHandler) AddMessage(c *gin.Context) {
 		request.Role,
 		request.Content,
 		request.Reasoning,
+		request.Sources,
 	)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})

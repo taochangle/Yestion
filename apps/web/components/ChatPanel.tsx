@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Bubble, Prompts, Sender, Think, Welcome } from "@ant-design/x";
+import {
+  Bubble,
+  Prompts,
+  Sender,
+  Sources,
+  Think,
+  Welcome
+} from "@ant-design/x";
 import { XMarkdown } from "@ant-design/x-markdown";
 import { Avatar } from "antd";
 import {
@@ -29,7 +36,15 @@ import { useI18n } from "@/lib/i18n";
 
 type RenderedMessage = ChatMessage & { status?: string };
 
-function AssistantMessage({ content }: { content: RenderedMessage }) {
+function AssistantMessage({
+  content,
+  workspaceName,
+  onOpenSource
+}: {
+  content: RenderedMessage;
+  workspaceName: string;
+  onOpenSource?: (blockId: string) => void;
+}) {
   const { t } = useI18n();
   const streaming =
     content.status === "loading" || content.status === "updating";
@@ -47,35 +62,33 @@ function AssistantMessage({ content }: { content: RenderedMessage }) {
         </Think>
       ) : null}
       <XMarkdown content={content.content} openLinksInNewTab escapeRawHtml />
+      {content.sources && content.sources.length > 0 ? (
+        <Sources
+          title={t("chat.sourcesTitle", { count: content.sources.length })}
+          items={content.sources.map((source) => ({
+            key: source.documentId,
+            title: source.title || t("editor.placeholder"),
+            description: workspaceName
+          }))}
+          onClick={(item) => onOpenSource?.(String(item.key))}
+        />
+      ) : null}
     </div>
   );
 }
-
-const roleConfig = {
-  assistant: {
-    placement: "start" as const,
-    avatar: <Avatar icon={<Bot size={16} />} style={{ background: "#6366f1" }} />,
-    contentRender: (content: RenderedMessage) => (
-      <AssistantMessage content={content} />
-    )
-  },
-  user: {
-    placement: "end" as const,
-    avatar: <Avatar icon={<User size={16} />} style={{ background: "#0ea5e9" }} />,
-    contentRender: (content: RenderedMessage) => content.content
-  }
-};
 
 type ChatPanelProps = {
   breadcrumb: BreadcrumbItem[];
   sidebarCollapsed: boolean;
   onOpenSidebar: () => void;
+  onOpenSource?: (blockId: string) => void;
 };
 
 export default function ChatPanel({
   breadcrumb,
   sidebarCollapsed,
-  onOpenSidebar
+  onOpenSidebar,
+  onOpenSource
 }: ChatPanelProps) {
   const { t } = useI18n();
   const {
@@ -111,6 +124,33 @@ export default function ChatPanel({
       { key: "databases", label: t("chat.promptDatabases") }
     ],
     [t]
+  );
+
+  const workspaceName = breadcrumb[0]?.title || "";
+  const roleConfig = useMemo(
+    () => ({
+      assistant: {
+        placement: "start" as const,
+        avatar: (
+          <Avatar icon={<Bot size={16} />} style={{ background: "#6366f1" }} />
+        ),
+        contentRender: (content: RenderedMessage) => (
+          <AssistantMessage
+            content={content}
+            workspaceName={workspaceName}
+            onOpenSource={onOpenSource}
+          />
+        )
+      },
+      user: {
+        placement: "end" as const,
+        avatar: (
+          <Avatar icon={<User size={16} />} style={{ background: "#0ea5e9" }} />
+        ),
+        contentRender: (content: RenderedMessage) => content.content
+      }
+    }),
+    [onOpenSource, workspaceName]
   );
 
   const items = messages.map(({ id, message, status }) => ({

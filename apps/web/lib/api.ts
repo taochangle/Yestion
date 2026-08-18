@@ -187,7 +187,16 @@ export type ChatMessageRecord = {
   role: "user" | "assistant";
   content: string;
   reasoning: string;
+  sources: ChatSourceRecord[];
   createdAt: string;
+};
+
+export type ChatSourceRecord = {
+  documentId: string;
+  title: string;
+  content: string;
+  type: string;
+  score: number;
 };
 
 export function getCookie(name: string): string | null {
