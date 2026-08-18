@@ -26,7 +26,6 @@ type chatRequest struct {
 	WorkspaceID  string                `json:"workspaceId" binding:"required"`
 	Messages     []service.ChatMessage `json:"messages" binding:"required,min=1"`
 	UseKnowledge bool                  `json:"useKnowledge"`
-	UseSearch    bool                  `json:"useSearch"`
 	Thinking     *bool                 `json:"thinking"`
 	TopK         int                   `json:"topk"`
 }
@@ -61,7 +60,6 @@ func (h *ChatHandler) Stream(c *gin.Context) {
 		request.WorkspaceID,
 		request.Messages,
 		request.UseKnowledge,
-		request.UseSearch,
 		thinkingEnabled,
 		c.Writer,
 	); err != nil {

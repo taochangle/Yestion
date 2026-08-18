@@ -20,7 +20,6 @@ import {
   PanelLeftOpen,
   Plus,
   RefreshCw,
-  Search,
   Trash2,
   User
 } from "lucide-react";
@@ -118,8 +117,6 @@ export default function ChatPanel({
   const {
     knowledgeEnabled,
     setKnowledgeEnabled,
-    searchEnabled,
-    setSearchEnabled,
     thinkingEnabled,
     setThinkingEnabled,
     workspaceId,
@@ -336,13 +333,6 @@ export default function ChatPanel({
                   icon={<BookOpen size={14} />}
                   checkedChildren={t("chat.useWorkspaceOn")}
                   unCheckedChildren={t("chat.useWorkspaceOff")}
-                />
-                <Sender.Switch
-                  value={searchEnabled}
-                  onChange={setSearchEnabled}
-                  icon={<Search size={14} />}
-                  checkedChildren={t("chat.useSearchOn")}
-                  unCheckedChildren={t("chat.useSearchOff")}
                 />
                 <Sender.Switch
                   value={thinkingEnabled}

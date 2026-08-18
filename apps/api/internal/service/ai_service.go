@@ -28,7 +28,6 @@ type AIService interface {
 		workspaceID string,
 		messages []ChatMessage,
 		useKnowledge bool,
-		useSearch bool,
 		thinkingEnabled bool,
 		writer io.Writer,
 	) error
@@ -59,12 +58,11 @@ func (s *aiService) Ready() error {
 
 func (s *aiService) StreamChat(
 	ctx context.Context,
-	workspaceID string,
-	messages []ChatMessage,
-	useKnowledge bool,
-	useSearch bool,
-	thinkingEnabled bool,
-	writer io.Writer,
+		workspaceID string,
+		messages []ChatMessage,
+		useKnowledge bool,
+		thinkingEnabled bool,
+		writer io.Writer,
 ) error {
 	if err := s.Ready(); err != nil {
 		return err
@@ -77,7 +75,7 @@ func (s *aiService) StreamChat(
 	system := "你是 Yestion 的 AI 助手，帮助用户在个人工作区中查找信息、总结内容和回答问题。回答使用与问题相同的语言，保持简洁、准确。"
 
 	var hits []ZVecHit
-	if useSearch && s.zvec != nil && strings.TrimSpace(question) != "" {
+	if useKnowledge && s.zvec != nil && strings.TrimSpace(question) != "" {
 		var err error
 		hits, err = s.zvec.Search(ctx, workspaceID, question, s.topK)
 		if err != nil {
@@ -85,7 +83,7 @@ func (s *aiService) StreamChat(
 		}
 		hits = filterSources(hits, s.maxScore)
 	}
-	if useKnowledge && len(hits) > 0 {
+	if len(hits) > 0 {
 		var contextBuilder strings.Builder
 		contextBuilder.WriteString("\n\n以下是与你问题相关的本地文档内容：\n")
 		for i, hit := range hits {
@@ -96,7 +94,7 @@ func (s *aiService) StreamChat(
 	}
 
 	flusher, _ := writer.(http.Flusher)
-	if useSearch && len(hits) > 0 {
+	if len(hits) > 0 {
 		if err := writeSSESources(writer, flusher, hits); err != nil {
 			return err
 		}

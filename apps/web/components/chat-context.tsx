@@ -32,10 +32,9 @@ function getProvider(
   conversationKey: string,
   workspaceId: string,
   knowledgeEnabled: boolean,
-  searchEnabled: boolean,
   thinkingEnabled: boolean
 ): YestionChatProvider {
-  const cacheKey = `${workspaceId}:${knowledgeEnabled ? 1 : 0}:${searchEnabled ? 1 : 0}:${thinkingEnabled ? 1 : 0}:${conversationKey}`;
+  const cacheKey = `${workspaceId}:${knowledgeEnabled ? 1 : 0}:${thinkingEnabled ? 1 : 0}:${conversationKey}`;
   let provider = providerCache.get(cacheKey);
   if (!provider) {
     provider = new YestionChatProvider({
@@ -44,7 +43,6 @@ function getProvider(
         params: {
           workspaceId,
           useKnowledge: knowledgeEnabled,
-          useSearch: searchEnabled,
           thinking: thinkingEnabled
         }
       })
@@ -61,8 +59,6 @@ type ChatContextValue = {
   workspaceId: string;
   knowledgeEnabled: boolean;
   setKnowledgeEnabled: (value: boolean) => void;
-  searchEnabled: boolean;
-  setSearchEnabled: (value: boolean) => void;
   thinkingEnabled: boolean;
   setThinkingEnabled: (value: boolean) => void;
   conversations: ConversationsState["conversations"];
@@ -94,7 +90,6 @@ export function ChatProvider({
 }) {
   const { t } = useI18n();
   const [knowledgeEnabled, setKnowledgeEnabled] = useState(true);
-  const [searchEnabled, setSearchEnabled] = useState(true);
   const [thinkingEnabled, setThinkingEnabled] = useState(true);
   // Tracks conversations created this session that deserve an auto-title from
   // their first user message, and message ids already persisted to the server.
@@ -169,7 +164,6 @@ export function ChatProvider({
       activeConversationKey,
       workspaceId,
       knowledgeEnabled,
-      searchEnabled,
       thinkingEnabled
     ),
     conversationKey: activeConversationKey,
@@ -314,8 +308,6 @@ export function ChatProvider({
     workspaceId,
     knowledgeEnabled,
     setKnowledgeEnabled,
-    searchEnabled,
-    setSearchEnabled,
     thinkingEnabled,
     setThinkingEnabled,
     conversations,
