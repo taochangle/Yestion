@@ -313,7 +313,7 @@ export default function ChatPanel({
         )}
       </div>
 
-      <div className="shrink-0 border-t border-zinc-200 p-3 dark:border-zinc-800">
+      <div className="shrink-0 border-t border-zinc-200 py-3 dark:border-zinc-800">
         <Sender
           value={value}
           onChange={setValue}
@@ -322,7 +322,7 @@ export default function ChatPanel({
           onCancel={abort}
           disabled={!workspaceId}
           placeholder={t("chat.placeholder")}
-          className="mx-auto max-w-3xl"
+          className="mx-auto w-full max-w-3xl"
           suffix={false}
           footer={(actionNode) => (
             <div className="flex items-center justify-between gap-3 px-1 pb-1">
