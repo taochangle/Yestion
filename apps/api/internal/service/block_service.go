@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
 	"strings"
 
 	"github.com/google/uuid"
@@ -34,14 +35,16 @@ type blockService struct {
 	blocks     repository.BlockRepository
 	workspaces repository.WorkspaceRepository
 	revisions  repository.RevisionRepository
+	vectors    VectorIndexService
 }
 
 func NewBlockService(
 	blocks repository.BlockRepository,
 	workspaces repository.WorkspaceRepository,
 	revisions repository.RevisionRepository,
+	vectors VectorIndexService,
 ) BlockService {
-	return &blockService{blocks: blocks, workspaces: workspaces, revisions: revisions}
+	return &blockService{blocks: blocks, workspaces: workspaces, revisions: revisions, vectors: vectors}
 }
 
 func (s *blockService) Tree(ctx context.Context, userID, workspaceID string) ([]*BlockNode, error) {
@@ -109,6 +112,9 @@ func (s *blockService) Create(ctx context.Context, userID, workspaceID string, p
 	if err := s.blocks.Create(ctx, block); err != nil {
 		return nil, err
 	}
+	if err := s.vectors.SyncBlock(ctx, block.ID); err != nil {
+		log.Printf("index block %s: %v", block.ID, err)
+	}
 	return block, nil
 }
 
@@ -146,6 +152,9 @@ func (s *blockService) Update(ctx context.Context, userID, blockID, title string
 	if err := s.blocks.Update(ctx, block); err != nil {
 		return nil, err
 	}
+	if err := s.vectors.SyncBlock(ctx, block.ID); err != nil {
+		log.Printf("re-index block %s: %v", block.ID, err)
+	}
 	return block, nil
 }
 
@@ -179,6 +188,11 @@ func (s *blockService) Delete(ctx context.Context, userID, blockID string) error
 	for _, id := range ids {
 		if err := s.blocks.Delete(ctx, id); err != nil {
 			return err
+		}
+	}
+	for _, id := range ids {
+		if err := s.vectors.DeleteBlock(ctx, block.WorkspaceID, id); err != nil {
+			log.Printf("remove vector for block %s: %v", id, err)
 		}
 	}
 	return nil

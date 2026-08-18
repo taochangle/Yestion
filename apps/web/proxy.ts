@@ -1,8 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const protectedPaths = ["/dashboard"];
+const protectedPaths = ["/", "/chat"];
+const apiProxyTarget = process.env.API_PROXY_TARGET ?? "http://localhost:8080";
 
 export function proxy(request: NextRequest) {
+  // /api/chat is served by a route handler that injects the auth cookie server-side.
+  if (request.nextUrl.pathname === "/api/chat") {
+    return NextResponse.next();
+  }
+
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    const targetUrl = new URL(
+      request.nextUrl.pathname + request.nextUrl.search,
+      apiProxyTarget
+    );
+    return NextResponse.rewrite(targetUrl);
+  }
+
   const token = request.cookies.get("auth_token")?.value;
 
   if (protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path))) {
@@ -17,5 +31,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"]
+  matcher: ["/", "/chat", "/api/:path*"]
 };

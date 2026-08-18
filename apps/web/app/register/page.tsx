@@ -37,7 +37,7 @@ export default function RegisterPage() {
         body: JSON.stringify({ name, email, password })
       });
       setAuthCookie(result.token);
-      router.push("/dashboard");
+      router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("auth.registerFailed"));
     } finally {

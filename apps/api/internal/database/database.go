@@ -26,11 +26,15 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 }
 
 func Migrate(db *gorm.DB) error {
+	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS vector").Error; err != nil {
+		return fmt.Errorf("enable pgvector extension: %w", err)
+	}
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.Workspace{},
 		&model.WorkspaceMember{},
 		&model.Block{},
+		&model.DocumentVector{},
 		&model.Database{},
 		&model.DatabaseRow{},
 		&model.Share{},

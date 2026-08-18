@@ -36,7 +36,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password })
       });
       setAuthCookie(result.token);
-      router.push("/dashboard");
+      router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("auth.loginFailed"));
     } finally {

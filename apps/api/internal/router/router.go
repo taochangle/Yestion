@@ -20,6 +20,7 @@ func New(
 	searchHandler *handler.SearchHandler,
 	shareHandler *handler.ShareHandler,
 	templateHandler *handler.TemplateHandler,
+	chatHandler *handler.ChatHandler,
 ) *gin.Engine {
 	router := gin.Default()
 
@@ -100,6 +101,11 @@ func New(
 			templates.POST("", templateHandler.Create)
 			templates.POST("/:id/instantiate", templateHandler.Instantiate)
 			templates.DELETE("/:id", templateHandler.Delete)
+		}
+
+		chat := api.Group("/chat", middleware.Auth(cfg.JWTSecret))
+		{
+			chat.POST("", chatHandler.Stream)
 		}
 	}
 

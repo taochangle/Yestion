@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/google/uuid"
@@ -36,17 +37,20 @@ type workspaceService struct {
 	workspaces repository.WorkspaceRepository
 	users      repository.UserRepository
 	blocks     repository.BlockRepository
+	vectors    VectorIndexService
 }
 
 func NewWorkspaceService(
 	workspaces repository.WorkspaceRepository,
 	users repository.UserRepository,
 	blocks repository.BlockRepository,
+	vectors VectorIndexService,
 ) WorkspaceService {
 	return &workspaceService{
 		workspaces: workspaces,
 		users:      users,
 		blocks:     blocks,
+		vectors:    vectors,
 	}
 }
 
@@ -94,6 +98,12 @@ func (s *workspaceService) Create(ctx context.Context, userID, name, icon string
 	if err := s.blocks.Create(ctx, rootPage); err != nil {
 		return nil, err
 	}
+	if err := s.vectors.EnsureWorkspace(ctx, workspace.ID); err != nil {
+		log.Printf("ensure zvec collection for workspace %s: %v", workspace.ID, err)
+	}
+	if err := s.vectors.SyncBlock(ctx, rootPage.ID); err != nil {
+		log.Printf("index root page %s: %v", rootPage.ID, err)
+	}
 
 	return workspace, nil
 }
@@ -131,7 +141,13 @@ func (s *workspaceService) Delete(ctx context.Context, userID, workspaceID strin
 	if err := s.ensureOwner(ctx, workspaceID, userID); err != nil {
 		return err
 	}
-	return s.workspaces.DeleteWorkspace(ctx, workspaceID)
+	if err := s.workspaces.DeleteWorkspace(ctx, workspaceID); err != nil {
+		return err
+	}
+	if err := s.vectors.DestroyWorkspace(ctx, workspaceID); err != nil {
+		log.Printf("destroy zvec collection for workspace %s: %v", workspaceID, err)
+	}
+	return nil
 }
 
 func (s *workspaceService) ListMembers(ctx context.Context, userID, workspaceID string) ([]model.WorkspaceMember, error) {

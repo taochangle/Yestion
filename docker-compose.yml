@@ -2,14 +2,15 @@ name: yestion
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:0.8.1-pg18-trixie
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-notion}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-notion}
       POSTGRES_DB: ${POSTGRES_DB:-notion}
+      TZ: "$TZ"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/18/docker/:rw
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-notion} -d ${POSTGRES_DB:-notion}"]
       interval: 5s
@@ -57,6 +58,11 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-notion-minio}
       MINIO_BUCKET: ${MINIO_BUCKET:-notion-files}
       MINIO_USE_SSL: "false"
+      ZVEC_SERVICE_URL: http://zvec:8765
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-v4-flash}
+      CHAT_TOP_K: ${CHAT_TOP_K:-5}
     depends_on:
       postgres:
         condition: service_healthy
@@ -64,15 +70,39 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      zvec:
+        condition: service_started
     ports:
       - "8080:8080"
+
+  zvec:
+    build:
+      context: ./apps/services/zvec
+    restart: unless-stopped
+    environment:
+      ZVEC_HOST: 0.0.0.0
+      ZVEC_PORT: "8765"
+      ZVEC_DATA_DIR: /app/data/zvec
+      ZVEC_EMBEDDING_PROVIDER: ${ZVEC_EMBEDDING_PROVIDER:-local}
+      ZVEC_EMBEDDING_MODEL: ${ZVEC_EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      ZVEC_EMBEDDING_DIM: ${ZVEC_EMBEDDING_DIM:-384}
+      # The Dockerfile pre-downloads the default local model into the image.
+      ZVEC_LOCAL_OFFLINE: ${ZVEC_LOCAL_OFFLINE:-1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+    volumes:
+      - zvec_data:/app/data/zvec
+      - zvec_hf_cache:/app/.cache/huggingface
+    ports:
+      - "8765:8765"
 
   web:
     build:
       context: ./apps/web
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXT_PUBLIC_API_URL: ""
+      API_PROXY_TARGET: http://api:8080
     depends_on:
       - api
     ports:
@@ -82,3 +112,5 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
+  zvec_data:
+  zvec_hf_cache:

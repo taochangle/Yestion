@@ -34,8 +34,11 @@ func main() {
 	authService := service.NewAuthService(userRepository, cfg.JWTSecret, cfg.JWTExpiresIn)
 	authHandler := handler.NewAuthHandler(authService)
 
-	workspaceService := service.NewWorkspaceService(workspaceRepository, userRepository, blockRepository)
-	blockService := service.NewBlockService(blockRepository, workspaceRepository, revisionRepository)
+	zvecClient := service.NewZVecClient(cfg.ZVecServiceURL)
+	vectorIndexService := service.NewVectorIndexService(db, blockRepository, zvecClient)
+
+	workspaceService := service.NewWorkspaceService(workspaceRepository, userRepository, blockRepository, vectorIndexService)
+	blockService := service.NewBlockService(blockRepository, workspaceRepository, revisionRepository, vectorIndexService)
 	databaseService := service.NewDatabaseService(databaseRepository, workspaceRepository, blockService)
 	searchService := service.NewSearchService(workspaceRepository, blockRepository)
 	shareService := service.NewShareService(shareRepository, blockRepository, workspaceRepository)
@@ -44,6 +47,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("create file service: %v", err)
 	}
+
+	aiService := service.NewAIService(zvecClient, cfg.DeepSeekAPIKey, cfg.DeepSeekBaseURL, cfg.DeepSeekModel, cfg.ChatTopK)
+
 	workspaceHandler := handler.NewWorkspaceHandler(workspaceService)
 	blockHandler := handler.NewBlockHandler(blockService)
 	fileHandler := handler.NewFileHandler(fileService)
@@ -51,8 +57,9 @@ func main() {
 	searchHandler := handler.NewSearchHandler(searchService)
 	shareHandler := handler.NewShareHandler(shareService)
 	templateHandler := handler.NewTemplateHandler(templateService)
+	chatHandler := handler.NewChatHandler(aiService, workspaceService)
 
-	engine := router.New(cfg, authHandler, workspaceHandler, blockHandler, fileHandler, databaseHandler, searchHandler, shareHandler, templateHandler)
+	engine := router.New(cfg, authHandler, workspaceHandler, blockHandler, fileHandler, databaseHandler, searchHandler, shareHandler, templateHandler, chatHandler)
 	if err := engine.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("run server: %v", err)
 	}

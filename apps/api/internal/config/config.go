@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -18,6 +19,11 @@ type Config struct {
 	MinIOSecretKey     string
 	MinIOBucket        string
 	MinIOUseSSL        bool
+	ZVecServiceURL     string
+	DeepSeekAPIKey     string
+	DeepSeekBaseURL    string
+	DeepSeekModel      string
+	ChatTopK           int
 }
 
 func Load() Config {
@@ -40,6 +46,11 @@ func Load() Config {
 		MinIOSecretKey:     getEnv("MINIO_SECRET_KEY", "notion-minio"),
 		MinIOBucket:        getEnv("MINIO_BUCKET", "notion-files"),
 		MinIOUseSSL:        getEnv("MINIO_USE_SSL", "false") == "true",
+		ZVecServiceURL:     getEnv("ZVEC_SERVICE_URL", "http://localhost:8765"),
+		DeepSeekAPIKey:     getEnv("DEEPSEEK_API_KEY", ""),
+		DeepSeekBaseURL:    getEnv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+		DeepSeekModel:      getEnv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
+		ChatTopK:           getEnvInt("CHAT_TOP_K", 5),
 	}
 }
 
@@ -48,4 +59,12 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func getEnvInt(key string, fallback int) int {
+	value, err := strconv.Atoi(os.Getenv(key))
+	if err != nil {
+		return fallback
+	}
+	return value
 }

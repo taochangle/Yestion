@@ -11,26 +11,38 @@ backed by PostgreSQL. Planning documents live under [`docs/`](docs/).
 ```text
 apps/web/          Next.js frontend and editor
 apps/api/          Go API services using Gin and GORM
+apps/services/zvec Python REST service wrapping Zvec (vector search)
 docker-compose.yml PostgreSQL, Redis, and MinIO
 docs/              Design and task-planning documents
 ```
 
 Keep Go handlers in `apps/api/internal/handler`, business logic in
 `apps/api/internal/service`, and models in `apps/api/internal/model`. Keep
-reusable editor primitives in `apps/web/components/blocks/`.
+reusable editor primitives in `apps/web/components/blocks/`. The Zvec service
+is managed with `uv`; keep its code in `apps/services/zvec/src/zvec_service/`.
+
+Vector search is a REST service: one Zvec collection per workspace, one
+document per page block. Embeddings are also persisted to PostgreSQL
+(`document_vectors`, pgvector). The Go API keeps both in sync on workspace and
+block create/update/delete. AI chat (`POST /api/chat`) streams OpenAI-compatible
+SSE and grounds answers in Zvec search results when `useKnowledge` is set.
 
 ## Build, Test, and Development Commands
 
 ```bash
 docker compose up -d --build                            # start everything
-docker compose up -d --build postgres redis minio api   # start backend + infra
+docker compose up -d --build postgres redis minio zvec api   # start backend + infra
 cd apps/web && npm run dev                              # run frontend locally
+cd apps/services/zvec && uv run zvec-service            # run the Zvec service locally
 cd apps/web && npm run lint                             # lint frontend TypeScript files
 cd apps/api && golangci-lint run                        # lint Go files
 cd apps/api && go test ./...                            # run Go unit tests
 ```
 
-Migrations run at API startup; PostgreSQL, Redis, and MinIO are internal only.
+Migrations (including the pgvector extension) run at API startup. Set
+`DEEPSEEK_API_KEY` to enable chat; the Zvec service embeds with a local
+sentence-transformers model by default (`ZVEC_EMBEDDING_PROVIDER=openai` to use
+an OpenAI-compatible embedding API).
 
 ## Coding Style & Naming Conventions
 

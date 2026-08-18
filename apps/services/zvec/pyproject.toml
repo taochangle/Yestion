@@ -1,0 +1,21 @@
+[project]
+name = "zvec-service"
+version = "0.1.0"
+description = "RESTful wrapper service around the Zvec in-process vector database"
+authors = [
+    { name = "陶欣", email = "1099588894@qq.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.141.1",
+    "sentence-transformers>=3.3.1",
+    "uvicorn[standard]>=0.52.3",
+    "zvec>=0.6.0",
+]
+
+[project.scripts]
+zvec-service = "zvec_service.__main__:main"
+
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13.0"]
+build-backend = "uv_build"

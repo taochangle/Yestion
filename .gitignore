@@ -8,10 +8,12 @@ node_modules/
 out/
 dist/
 coverage/
+*.tsbuildinfo
 
 apps/api/bin/
 apps/api/tmp/
 
 .DS_Store
 *.log
-
+__pycache__/
+*.pyc
