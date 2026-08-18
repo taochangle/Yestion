@@ -49,7 +49,16 @@ func main() {
 		log.Fatalf("create file service: %v", err)
 	}
 
-	aiService := service.NewAIService(zvecClient, cfg.DeepSeekAPIKey, cfg.DeepSeekBaseURL, cfg.DeepSeekModel, cfg.ChatTopK, cfg.ChatSourceMaxScore)
+	aiService := service.NewAIService(
+		zvecClient,
+		cfg.DeepSeekAPIKey,
+		cfg.DeepSeekBaseURL,
+		cfg.DeepSeekModel,
+		cfg.ChatTopK,
+		cfg.ChatSourceMaxScore,
+		cfg.ChatSourceMargin,
+		cfg.ChatSourceMinChars,
+	)
 	chatHistoryService := service.NewChatHistoryService(chatRepository)
 
 	workspaceHandler := handler.NewWorkspaceHandler(workspaceService)

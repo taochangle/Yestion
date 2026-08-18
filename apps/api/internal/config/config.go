@@ -25,6 +25,8 @@ type Config struct {
 	DeepSeekModel      string
 	ChatTopK           int
 	ChatSourceMaxScore float64
+	ChatSourceMargin   float64
+	ChatSourceMinChars int
 }
 
 func Load() Config {
@@ -53,6 +55,8 @@ func Load() Config {
 		DeepSeekModel:      getEnv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
 		ChatTopK:           getEnvInt("CHAT_TOP_K", 5),
 		ChatSourceMaxScore: getEnvFloat("CHAT_SOURCE_MAX_SCORE", 1.2),
+		ChatSourceMargin:   getEnvFloat("CHAT_SOURCE_MARGIN", 0.35),
+		ChatSourceMinChars: getEnvInt("CHAT_SOURCE_MIN_CHARS", 20),
 	}
 }
 

@@ -49,12 +49,21 @@ type aiService struct {
 	model    string
 	topK     int
 	maxScore float64
+	margin   float64
+	minChars int
 }
 
-func NewAIService(zvec *ZVecClient, apiKey, baseURL, model string, topK int, maxScore float64) AIService {
+func NewAIService(
+	zvec *ZVecClient,
+	apiKey, baseURL, model string,
+	topK int,
+	maxScore, margin float64,
+	minChars int,
+) AIService {
 	return &aiService{
 		zvec: zvec, apiKey: apiKey, baseURL: strings.TrimSuffix(baseURL, "/"),
 		model: model, topK: topK, maxScore: maxScore,
+		margin: margin, minChars: minChars,
 	}
 }
 
@@ -90,7 +99,7 @@ func (s *aiService) StreamChat(
 			if err != nil {
 				return fmt.Errorf("search local knowledge: %w", err)
 			}
-			for _, hit := range filterSources(hits, s.maxScore) {
+			for _, hit := range filterBasic(hits, s.maxScore, s.minChars) {
 				sources = append(sources, model.ChatSource{
 					WorkspaceID:   workspace.ID,
 					WorkspaceName: workspace.Name,
@@ -105,6 +114,7 @@ func (s *aiService) StreamChat(
 		sort.Slice(sources, func(i, j int) bool {
 			return sources[i].Score < sources[j].Score
 		})
+		sources = trimByMargin(sources, s.margin)
 		if len(sources) > s.topK {
 			sources = sources[:s.topK]
 		}
@@ -184,16 +194,37 @@ func (s *aiService) StreamChat(
 
 // filterSources drops documents that carry no text or are too far from the
 // query, so empty or unrelated pages are not shown as sources.
-func filterSources(hits []ZVecHit, maxScore float64) []ZVecHit {
-	filtered := make([]ZVecHit, 0, len(hits))
+func filterBasic(hits []ZVecHit, maxScore float64, minChars int) []ZVecHit {
+	candidates := make([]ZVecHit, 0, len(hits))
 	for _, hit := range hits {
-		if strings.TrimSpace(hit.Content) == "" {
+		if len(strings.TrimSpace(hit.Content)) < minChars {
 			continue
 		}
 		if maxScore > 0 && hit.Score > maxScore {
 			continue
 		}
-		filtered = append(filtered, hit)
+		candidates = append(candidates, hit)
+	}
+	return candidates
+}
+
+// trimByMargin keeps only sources reasonably close to the best global match;
+// a large distance gap means the rest are effectively unrelated.
+func trimByMargin(sources []model.ChatSource, margin float64) []model.ChatSource {
+	if margin <= 0 || len(sources) == 0 {
+		return sources
+	}
+	best := sources[0].Score
+	for _, source := range sources[1:] {
+		if source.Score < best {
+			best = source.Score
+		}
+	}
+	filtered := sources[:0]
+	for _, source := range sources {
+		if source.Score <= best+margin {
+			filtered = append(filtered, source)
+		}
 	}
 	return filtered
 }
