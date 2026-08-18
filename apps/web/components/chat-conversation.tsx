@@ -145,6 +145,7 @@ export default function ChatConversation({
         ...(workspaceId ? { workspaceId } : {}),
         ...(pageId ? { pageId } : {})
       });
+      setValue("");
     },
     [onRequest, pageId, workspaceId]
   );
