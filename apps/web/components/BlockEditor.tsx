@@ -8,6 +8,9 @@ import {
   useEditor
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { Markdown } from "@tiptap/markdown";
+import { Extension } from "@tiptap/core";
+import { Plugin } from "@tiptap/pm/state";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
@@ -54,7 +57,6 @@ import { normalizeRichDocument } from "@/lib/rich_content";
 import { BreadcrumbItem } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import CodeBlockView from "@/components/CodeBlockView";
-import { markdownToTiptap } from "@/lib/markdown";
 import { common, createLowlight } from "lowlight";
 import {
   Dialog,
@@ -101,6 +103,7 @@ type BlockEditorProps = {
   blockId: string;
   initialDocument?: JSONContent;
   breadcrumb?: BreadcrumbItem[];
+  editorRef?: React.RefObject<Editor | null>;
   onDocumentChange: (document: JSONContent) => void;
   onUploadImage: (file: File) => Promise<string>;
   onUploadFile: (file: File) => Promise<string>;
@@ -112,6 +115,38 @@ const CodeBlockWithLanguage = CodeBlockLowlight.extend({
     return ReactNodeViewRenderer(CodeBlockView);
   }
 });
+
+// Official paste-detection pattern from the Tiptap Markdown docs: when plain
+// text that looks like Markdown is pasted, parse it through the Markdown
+// manager instead of inserting it verbatim.
+const PasteMarkdown = Extension.create({
+  name: "pasteMarkdown",
+
+  addProseMirrorPlugins() {
+    const { editor } = this;
+    return [
+      new Plugin({
+        props: {
+          handlePaste: (_view, event) => {
+            const text = event.clipboardData?.getData("text/plain");
+            if (!text || !editor.markdown || !looksLikeMarkdown(text)) {
+              return false;
+            }
+            const json = editor.markdown.parse(text);
+            editor.commands.insertContent(json);
+            return true;
+          }
+        }
+      })
+    ];
+  }
+});
+
+function looksLikeMarkdown(text: string): boolean {
+  return /(^|\n)(#{1,6}\s|>\s|[-*+]\s|\d+\.\s|```|~~~|\|.*\|)|(\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/.test(
+    text
+  );
+}
 
 const emptyMenu: SlashMenuState = {
   open: false,
@@ -135,6 +170,7 @@ export default function BlockEditor({
   blockId,
   initialDocument,
   breadcrumb = [],
+  editorRef,
   onDocumentChange,
   onUploadImage,
   onUploadFile
@@ -461,30 +497,16 @@ export default function BlockEditor({
       content: initialDocument
         ? normalizeRichDocument(initialDocument)
         : undefined,
-      editorProps: {
-        handlePaste: (view, event) => {
-          const text = event.clipboardData?.getData("text/plain");
-          if (!text) {
-            return false;
-          }
-
-          const looksLikeMarkdown =
-            /(^|\n)(#{1,6}\s|>\s|[-*]\s|\d+\.\s|```|\[[^\]]+\]\([^)]+\)|\|)/.test(
-              text
-            );
-          if (!looksLikeMarkdown) {
-            return false;
-          }
-
-          event.preventDefault();
-          const document = markdownToTiptap(text);
-          const fragment = view.state.schema.nodeFromJSON(document).content;
-          const { from, to } = view.state.selection;
-          view.dispatch(view.state.tr.replaceWith(from, to, fragment));
-          return true;
+      onCreate: ({ editor: instance }) => {
+        if (editorRef) {
+          editorRef.current = instance;
         }
       },
       extensions: [
+        Markdown.configure({
+          markedOptions: { gfm: true }
+        }),
+        PasteMarkdown,
         StarterKit.configure({
           codeBlock: false,
           heading: {

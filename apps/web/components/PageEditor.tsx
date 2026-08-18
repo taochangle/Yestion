@@ -1,6 +1,6 @@
 "use client";
 
-import { type JSONContent } from "@tiptap/react";
+import { type Editor, type JSONContent } from "@tiptap/react";
 import {
   type ChangeEvent as ReactChangeEvent,
   useCallback,
@@ -108,6 +108,7 @@ export default function PageEditor({
   const draftTitleRef = useRef(draftTitle);
   const selectedTitleRef = useRef(selectedBlock?.properties.title ?? "");
   const markdownInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<Editor | null>(null);
 
   useEffect(() => {
     blockIdRef.current = selectedBlock?.id ?? null;
@@ -311,14 +312,17 @@ export default function PageEditor({
     const filename = `${(currentBlock.properties.title || "untitled")
       .replace(/[\\/:*?"<>|]/g, "-")
       .trim() || "untitled"}.md`;
-    downloadTextFile(filename, tiptapToMarkdown(document), "text/markdown");
+    const markdown = editorRef.current?.getMarkdown() ?? tiptapToMarkdown(document);
+    downloadTextFile(filename, markdown, "text/markdown");
   }
 
   async function copyPageContent() {
     const document =
       latestDocumentRef.current ??
       normalizeDocument(currentBlock.properties.content);
-    const markdown = document ? tiptapToMarkdown(document) : "";
+    const markdown =
+      editorRef.current?.getMarkdown() ??
+      (document ? tiptapToMarkdown(document) : "");
     await navigator.clipboard.writeText(markdown);
   }
 
@@ -332,6 +336,11 @@ export default function PageEditor({
     }
 
     const text = await file.text();
+    const editor = editorRef.current;
+    if (editor) {
+      editor.commands.setContent(text, { contentType: "markdown" });
+      return;
+    }
     const document = markdownToTiptap(text);
     latestDocumentRef.current = document;
     setDocumentOverride(document);
@@ -548,6 +557,7 @@ export default function PageEditor({
           key={`${currentBlock.id}-${contentRevision}`}
           blockId={currentBlock.id}
           breadcrumb={breadcrumb}
+          editorRef={editorRef}
           initialDocument={
             documentOverride ??
             normalizeDocument(currentBlock.properties.content)
