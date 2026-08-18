@@ -2,6 +2,12 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Sources items are clickable even without a url, so keep the hand cursor. */
+.ant-sources-list-item,
+.ant-sources-link {
+  cursor: pointer;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
