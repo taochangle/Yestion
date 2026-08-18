@@ -236,24 +236,28 @@ export default function ChatPanel({
           disabled={!workspaceId}
           placeholder={t("chat.placeholder")}
           className="mx-auto max-w-3xl"
-          prefix={
-            <>
-              <Sender.Switch
-                value={knowledgeEnabled}
-                onChange={setKnowledgeEnabled}
-                icon={<BookOpen size={14} />}
-                checkedChildren={t("chat.useWorkspace")}
-                unCheckedChildren={t("chat.useWorkspace")}
-              />
-              <Sender.Switch
-                value={searchEnabled}
-                onChange={setSearchEnabled}
-                icon={<Search size={14} />}
-                checkedChildren={t("chat.useSearch")}
-                unCheckedChildren={t("chat.useSearch")}
-              />
-            </>
-          }
+          suffix={false}
+          footer={(actionNode) => (
+            <div className="flex items-center justify-between gap-3 px-1 pb-1">
+              <div className="flex items-center gap-2">
+                <Sender.Switch
+                  value={knowledgeEnabled}
+                  onChange={setKnowledgeEnabled}
+                  icon={<BookOpen size={14} />}
+                  checkedChildren={t("chat.useWorkspaceOn")}
+                  unCheckedChildren={t("chat.useWorkspaceOff")}
+                />
+                <Sender.Switch
+                  value={searchEnabled}
+                  onChange={setSearchEnabled}
+                  icon={<Search size={14} />}
+                  checkedChildren={t("chat.useSearchOn")}
+                  unCheckedChildren={t("chat.useSearchOff")}
+                />
+              </div>
+              <div className="flex items-center">{actionNode}</div>
+            </div>
+          )}
         />
       </div>
     </main>
