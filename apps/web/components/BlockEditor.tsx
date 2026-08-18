@@ -166,6 +166,25 @@ const emptyToolbar: ToolbarState = {
   selectedIndex: 0
 };
 
+const MENU_HEIGHT = 320; // matches max-h-80 on the popup
+const MENU_WIDTH = 256; // matches w-64 on the popup
+
+function menuPosition(
+  coordinates: { top: number; bottom: number; left: number },
+  height = MENU_HEIGHT
+): { top: number; left: number } {
+  const viewportHeight = window.innerHeight;
+  const below = coordinates.bottom + 4 + height <= viewportHeight;
+  const top = below
+    ? coordinates.bottom + 4
+    : Math.max(4, coordinates.top - height - 4);
+  const left = Math.min(
+    coordinates.left,
+    Math.max(4, window.innerWidth - MENU_WIDTH - 8)
+  );
+  return { top, left };
+}
+
 export default function BlockEditor({
   blockId,
   initialDocument,
@@ -239,14 +258,15 @@ export default function BlockEditor({
 
     const rangeStart = from - (match[1]?.length ?? 0) - 1;
     const coordinates = editor.view.coordsAtPos(rangeStart);
+    const position = menuPosition(coordinates);
 
     setSlashMenu({
       open: true,
       query: match[1] ?? "",
       from: rangeStart,
       to: from,
-      top: coordinates.bottom + 4,
-      left: coordinates.left,
+      top: position.top,
+      left: position.left,
       selectedIndex: 0
     });
   }, []);
@@ -273,6 +293,7 @@ export default function BlockEditor({
     }
 
     const coordinates = editor.view.coordsAtPos(from);
+    const position = menuPosition(coordinates);
 
     const activeType = getActiveBlockType(editor);
     const activeIndex = commandsRef.current.findIndex(
@@ -280,8 +301,8 @@ export default function BlockEditor({
     );
     setToolbar({
       open: true,
-      top: coordinates.bottom + 4,
-      left: coordinates.left,
+      top: position.top,
+      left: position.left,
       activeType,
       selectedIndex: activeIndex >= 0 ? activeIndex : 0
     });
