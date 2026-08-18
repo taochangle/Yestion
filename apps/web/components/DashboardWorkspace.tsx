@@ -193,6 +193,22 @@ export default function DashboardPage({
     }
   }
 
+  async function handleCreateDocument(title: string) {
+    if (!activeWorkspaceId) {
+      return;
+    }
+    const result = await apiFetch<{ block: Block }>("/api/blocks", {
+      method: "POST",
+      body: JSON.stringify({
+        workspaceId: activeWorkspaceId,
+        parentId: null,
+        type: "page",
+        title
+      })
+    });
+    await loadBlocks(activeWorkspaceId, result.block.id);
+  }
+
   const breadcrumb = useMemo(
     () => {
       const workspace = workspaces.find(
@@ -641,6 +657,7 @@ export default function DashboardPage({
               onInsertToDocument={handleInsertToEditor}
               onDuplicatePage={handleDuplicatePage}
               onInsertSubPage={handleInsertSubPage}
+              onCreateDocument={handleCreateDocument}
               onCreateWorkspace={handleCreateWorkspace}
               onDeleteDocument={() => {
                 if (selectedBlock) {
@@ -675,6 +692,7 @@ export default function DashboardPage({
             onInsertToDocument={handleInsertToEditor}
             onDuplicatePage={handleDuplicatePage}
             onInsertSubPage={handleInsertSubPage}
+            onCreateDocument={handleCreateDocument}
             onCreateWorkspace={handleCreateWorkspace}
             onDeleteDocument={() => {
               if (selectedBlock) {

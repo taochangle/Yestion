@@ -46,6 +46,7 @@ export default function AiPanel({
   onInsertToDocument,
   onDuplicatePage,
   onInsertSubPage,
+  onCreateDocument,
   onCreateWorkspace,
   onDeleteDocument,
   onFloat,
@@ -58,6 +59,7 @@ export default function AiPanel({
   onInsertToDocument?: (markdown: string) => void;
   onDuplicatePage?: () => void;
   onInsertSubPage?: () => void;
+  onCreateDocument?: (title: string) => Promise<void>;
   onCreateWorkspace?: (name: string) => Promise<void>;
   onDeleteDocument?: () => void;
   onFloat: () => void;
@@ -69,6 +71,9 @@ export default function AiPanel({
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
+  const [documentOpen, setDocumentOpen] = useState(false);
+  const [newDocumentTitle, setNewDocumentTitle] = useState("");
+  const [creatingDocument, setCreatingDocument] = useState(false);
   const { conversations, activeConversationKey, handleNewConversation } =
     useChat();
   const title =
@@ -150,6 +155,7 @@ export default function AiPanel({
             </DropdownMenu>
             {onDuplicatePage ||
             onInsertSubPage ||
+            onCreateDocument ||
             onCreateWorkspace ||
             onDeleteDocument ? (
               <DropdownMenu>
@@ -179,6 +185,17 @@ export default function AiPanel({
                     <DropdownMenuItem onClick={onInsertSubPage}>
                       <Plus size={14} />
                       {t("ai.insertSubPage")}
+                    </DropdownMenuItem>
+                  ) : null}
+                  {onCreateDocument ? (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setNewDocumentTitle("");
+                        setDocumentOpen(true);
+                      }}
+                    >
+                      <Plus size={14} />
+                      {t("ai.newDocument")}
                     </DropdownMenuItem>
                   ) : null}
                   {onCreateWorkspace ? (
@@ -267,8 +284,56 @@ export default function AiPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={documentOpen} onOpenChange={setDocumentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("ai.newDocument")}</DialogTitle>
+            <DialogDescription>{t("ai.documentNameHint")}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="ai-document-title">{t("common.name")}</Label>
+            <Input
+              id="ai-document-title"
+              value={newDocumentTitle}
+              onChange={(event) => setNewDocumentTitle(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && newDocumentTitle.trim()) {
+                  void confirmCreateDocument();
+                }
+              }}
+              placeholder={t("ai.documentNamePlaceholder")}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDocumentOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              disabled={!newDocumentTitle.trim() || creatingDocument}
+              onClick={() => void confirmCreateDocument()}
+            >
+              {creatingDocument ? t("common.loading") : t("common.add")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </aside>
   );
+
+  async function confirmCreateDocument() {
+    if (!onCreateDocument || !newDocumentTitle.trim()) {
+      return;
+    }
+    setCreatingDocument(true);
+    try {
+      await onCreateDocument(newDocumentTitle.trim());
+      setDocumentOpen(false);
+    } finally {
+      setCreatingDocument(false);
+    }
+  }
 
   async function confirmCreateWorkspace() {
     if (!onCreateWorkspace || !newWorkspaceName.trim()) {
