@@ -8,28 +8,33 @@ import {
   type ReactNode
 } from "react";
 import {
-  OpenAIChatProvider,
   useXChat,
   useXConversations,
   XRequest
 } from "@ant-design/x-sdk";
-import type { MessageInfo, XModelMessage } from "@ant-design/x-sdk";
+import type { MessageInfo } from "@ant-design/x-sdk";
+import {
+  YestionChatProvider,
+  type ChatInput,
+  type ChatMessage,
+  type ChatOutput
+} from "@/components/chat-provider";
 import { useI18n } from "@/lib/i18n";
 
 // Providers bake workspaceId + knowledge flag into the request params, so the
 // cache is keyed by all three inputs.
-const providerCache = new Map<string, OpenAIChatProvider>();
+const providerCache = new Map<string, YestionChatProvider>();
 
 function getProvider(
   conversationKey: string,
   workspaceId: string,
   knowledgeEnabled: boolean
-): OpenAIChatProvider {
+): YestionChatProvider {
   const cacheKey = `${workspaceId}:${knowledgeEnabled ? 1 : 0}:${conversationKey}`;
   let provider = providerCache.get(cacheKey);
   if (!provider) {
-    provider = new OpenAIChatProvider({
-      request: XRequest("/api/chat", {
+    provider = new YestionChatProvider({
+      request: XRequest<ChatInput, ChatOutput, ChatMessage>("/api/chat", {
         manual: true,
         params: { workspaceId, useKnowledge: knowledgeEnabled }
       })
@@ -51,7 +56,7 @@ type ChatContextValue = {
   setActiveConversationKey: (key: string) => void;
   addConversation: ConversationsState["addConversation"];
   removeConversation: ConversationsState["removeConversation"];
-  messages: MessageInfo<XModelMessage>[];
+  messages: MessageInfo<ChatMessage>[];
   onRequest: ChatState["onRequest"];
   isRequesting: boolean;
   abort: () => void;
@@ -89,10 +94,10 @@ export function ChatProvider({
       if (requestError?.name === "AbortError") {
         return {
           content: messageInfo?.message?.content || "",
-          role: "assistant"
+          role: "assistant" as const
         };
       }
-      return { content: t("chat.requestFailed"), role: "assistant" };
+      return { content: t("chat.requestFailed"), role: "assistant" as const };
     }
   });
 

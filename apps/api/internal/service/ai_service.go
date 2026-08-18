@@ -102,30 +102,57 @@ func (s *aiService) StreamChat(
 	for stream.Next() {
 		chunk := stream.Current()
 		for _, choice := range chunk.Choices {
-			content := choice.Delta.Content
-			if content == "" {
+			if reasoning := deltaReasoningContent(choice.Delta); reasoning != "" {
+				if err := writeSSE(writer, flusher, reasoning, true); err != nil {
+					return err
+				}
 				continue
 			}
-			if err := writeSSE(writer, flusher, content); err != nil {
-				return err
+			if content := choice.Delta.Content; content != "" {
+				if err := writeSSE(writer, flusher, content, false); err != nil {
+					return err
+				}
 			}
 		}
 	}
 	if err := stream.Err(); err != nil {
 		return err
 	}
-	return writeSSE(writer, flusher, "[DONE]")
+	return writeSSE(writer, flusher, "[DONE]", false)
 }
 
-// writeSSE writes an OpenAI-compatible SSE data frame: an assistant delta or [DONE].
-func writeSSE(writer io.Writer, flusher http.Flusher, content string) error {
+type zvecDeltaJSON struct {
+	ReasoningContent string `json:"reasoning_content"`
+}
+
+// deltaReasoningContent extracts DeepSeek's reasoning_content from the raw
+// delta JSON, which the OpenAI SDK does not model as a typed field.
+func deltaReasoningContent(delta openai.ChatCompletionChunkChoiceDelta) string {
+	raw := delta.RawJSON()
+	if raw == "" {
+		return ""
+	}
+	var payload zvecDeltaJSON
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return ""
+	}
+	return payload.ReasoningContent
+}
+
+// writeSSE writes an OpenAI-compatible SSE data frame: an assistant delta
+// (content or reasoning_content) or [DONE].
+func writeSSE(writer io.Writer, flusher http.Flusher, content string, reasoning bool) error {
 	var frame string
 	if content == "[DONE]" {
 		frame = "data: [DONE]"
 	} else {
+		delta := map[string]any{"content": content}
+		if reasoning {
+			delta = map[string]any{"reasoning_content": content}
+		}
 		payload, err := json.Marshal(map[string]any{
 			"choices": []any{map[string]any{
-				"delta": map[string]any{"content": content},
+				"delta": delta,
 			}},
 		})
 		if err != nil {

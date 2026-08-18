@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Bubble, Prompts, Sender, Welcome } from "@ant-design/x";
+import { Bubble, Prompts, Sender, Think, Welcome } from "@ant-design/x";
 import { XMarkdown } from "@ant-design/x-markdown";
 import { Avatar, Switch } from "antd";
 import {
@@ -13,6 +13,7 @@ import {
   User
 } from "lucide-react";
 import { useChat } from "@/components/chat-context";
+import type { ChatMessage } from "@/components/chat-provider";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,17 +25,42 @@ import Popconfirm from "@/components/ui/popconfirm";
 import { type BreadcrumbItem } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
+type RenderedMessage = ChatMessage & { status?: string };
+
+function AssistantMessage({ content }: { content: RenderedMessage }) {
+  const { t } = useI18n();
+  const streaming =
+    content.status === "loading" || content.status === "updating";
+
+  return (
+    <div className="space-y-3">
+      {content.reasoning ? (
+        <Think
+          title={t("chat.thinking")}
+          loading={streaming}
+          blink={content.status === "updating"}
+          defaultExpanded={false}
+        >
+          {content.reasoning}
+        </Think>
+      ) : null}
+      <XMarkdown content={content.content} openLinksInNewTab escapeRawHtml />
+    </div>
+  );
+}
+
 const roleConfig = {
   assistant: {
     placement: "start" as const,
     avatar: <Avatar icon={<Bot size={16} />} style={{ background: "#6366f1" }} />,
-    contentRender: (content: string) => (
-      <XMarkdown content={content} openLinksInNewTab escapeRawHtml />
+    contentRender: (content: RenderedMessage) => (
+      <AssistantMessage content={content} />
     )
   },
   user: {
     placement: "end" as const,
-    avatar: <Avatar icon={<User size={16} />} style={{ background: "#0ea5e9" }} />
+    avatar: <Avatar icon={<User size={16} />} style={{ background: "#0ea5e9" }} />,
+    contentRender: (content: RenderedMessage) => content.content
   }
 };
 
@@ -86,7 +112,7 @@ export default function ChatPanel({
   const items = messages.map(({ id, message, status }) => ({
     key: id,
     role: message.role,
-    content: message.content,
+    content: { ...message, status },
     loading: status === "loading"
   }));
 
