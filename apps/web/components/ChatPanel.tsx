@@ -314,7 +314,7 @@ export default function ChatPanel({
         )}
       </div>
 
-      <div className="shrink-0 border-t border-zinc-200 p-3 dark:border-zinc-800">
+      <div className="shrink-0 p-3">
         <Sender
           value={value}
           onChange={setValue}
