@@ -3,6 +3,7 @@
 import { type JSONContent } from "@tiptap/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ChatPanel from "@/components/ChatPanel";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import DatabaseView from "@/components/DatabaseView";
 import MovePageDialog from "@/components/MovePageDialog";
@@ -35,7 +36,11 @@ function activeBlockKey(workspaceId: string) {
   return `${ACTIVE_BLOCK_PREFIX}${workspaceId}`;
 }
 
-export default function DashboardPage() {
+export default function DashboardPage({
+  initialMode = "home"
+}: {
+  initialMode?: "home" | "chat";
+}) {
   const router = useRouter();
   const { t } = useI18n();
   const [user, setUser] = useState<User | null>(null);
@@ -51,7 +56,7 @@ export default function DashboardPage() {
   const [templateOpen, setTemplateOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarMode, setSidebarMode] = useState<"home" | "chat">("home");
+  const [sidebarMode, setSidebarMode] = useState<"home" | "chat">(initialMode);
   const [error, setError] = useState<string | null>(null);
 
   const loadBlocks = useCallback(async (workspaceId: string, preferredBlockId?: string) => {
@@ -502,51 +507,73 @@ export default function DashboardPage() {
           onDeletePage={requestDeletePage}
           onMoveBlock={handleMoveBlock}
           onLogout={handleLogout}
-          onModeChange={(mode) => {
-            setSidebarMode(mode);
-            if (mode === "chat") {
-              router.push("/chat");
-            }
-          }}
+          onModeChange={setSidebarMode}
         />
 
-        {selectedBlock?.type === "database" ? (
-          <DatabaseView
-            key={selectedBlock.id}
-            databaseBlock={selectedBlock}
-            breadcrumb={breadcrumb}
-            onUpdateTitle={handleUpdateTitle}
-            onRefreshTree={handleRefreshTree}
+        <div
+          className={
+            sidebarMode === "chat" ? "hidden" : "min-h-0 flex-1"
+          }
+        >
+          {selectedBlock?.type === "database" ? (
+            <DatabaseView
+              key={selectedBlock.id}
+              databaseBlock={selectedBlock}
+              breadcrumb={breadcrumb}
+              onUpdateTitle={handleUpdateTitle}
+              onRefreshTree={handleRefreshTree}
+              sidebarCollapsed={sidebarCollapsed}
+              onOpenSidebar={() => setSidebarCollapsed(false)}
+            />
+          ) : (
+            <PageEditor
+              key={selectedBlock?.id ?? "empty"}
+              selectedBlock={selectedBlock}
+              breadcrumb={breadcrumb}
+              onUpdateTitle={handleUpdateTitle}
+              onUpdateProperties={handleUpdateBlockProperties}
+              onSaveContent={handleSaveContent}
+              onUploadImage={handleUploadImage}
+              onUploadFile={handleUploadFile}
+              onOpenShare={() => {
+                if (selectedBlock) {
+                  setShareBlock(selectedBlock);
+                }
+              }}
+              onCopyLink={handleCopyLink}
+              onDuplicate={handleDuplicatePage}
+              onMoveToTrash={() => {
+                if (selectedBlock) {
+                  void requestDeletePage(selectedBlock.id);
+                }
+              }}
+              onMoveTo={() => setMoveOpen(true)}
+              sidebarCollapsed={sidebarCollapsed}
+              onOpenSidebar={() => setSidebarCollapsed(false)}
+            />
+          )}
+        </div>
+
+        <div
+          className={
+            sidebarMode === "chat" ? "min-h-0 flex-1" : "hidden"
+          }
+        >
+          <ChatPanel
+            workspaceId={activeWorkspaceId}
+            breadcrumb={[
+              {
+                id: activeWorkspaceId || "workspace",
+                title:
+                  workspaces.find((item) => item.id === activeWorkspaceId)
+                    ?.name || t("common.workspace")
+              },
+              { id: "chat", title: t("sidebar.chat") }
+            ]}
             sidebarCollapsed={sidebarCollapsed}
             onOpenSidebar={() => setSidebarCollapsed(false)}
           />
-        ) : (
-          <PageEditor
-            key={selectedBlock?.id ?? "empty"}
-            selectedBlock={selectedBlock}
-            breadcrumb={breadcrumb}
-            onUpdateTitle={handleUpdateTitle}
-            onUpdateProperties={handleUpdateBlockProperties}
-            onSaveContent={handleSaveContent}
-            onUploadImage={handleUploadImage}
-            onUploadFile={handleUploadFile}
-            onOpenShare={() => {
-              if (selectedBlock) {
-                setShareBlock(selectedBlock);
-              }
-            }}
-            onCopyLink={handleCopyLink}
-            onDuplicate={handleDuplicatePage}
-            onMoveToTrash={() => {
-              if (selectedBlock) {
-                void requestDeletePage(selectedBlock.id);
-              }
-            }}
-            onMoveTo={() => setMoveOpen(true)}
-            sidebarCollapsed={sidebarCollapsed}
-            onOpenSidebar={() => setSidebarCollapsed(false)}
-          />
-        )}
+        </div>
       </div>
 
       <ConfirmDialog

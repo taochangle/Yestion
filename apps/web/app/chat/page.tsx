@@ -1,7 +1,7 @@
 "use client";
 
-import ChatPage from "@/components/ChatPage";
+import DashboardPage from "@/components/DashboardWorkspace";
 
 export default function Page() {
-  return <ChatPage />;
+  return <DashboardPage initialMode="chat" />;
 }
