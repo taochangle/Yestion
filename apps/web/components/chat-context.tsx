@@ -57,10 +57,6 @@ type ChatContextValue = {
   abort: () => void;
   handleNewConversation: () => void;
   deleteConversation: (key: string) => void;
-  pendingDeleteConversationKey: string | null;
-  requestDeleteConversation: (key: string) => void;
-  confirmDeleteConversation: () => void;
-  cancelDeleteConversation: () => void;
 };
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -74,8 +70,6 @@ export function ChatProvider({
 }) {
   const { t } = useI18n();
   const [knowledgeEnabled, setKnowledgeEnabled] = useState(true);
-  const [pendingDeleteConversationKey, setPendingDeleteConversationKey] =
-    useState<string | null>(null);
 
   const {
     conversations,
@@ -111,10 +105,6 @@ export function ChatProvider({
     setActiveConversationKey(key);
   }, [addConversation, conversations.length, setActiveConversationKey, t]);
 
-  const requestDeleteConversation = useCallback((key: string) => {
-    setPendingDeleteConversationKey(key);
-  }, []);
-
   const deleteConversation = useCallback(
     (key: string) => {
       removeConversation(key);
@@ -126,19 +116,6 @@ export function ChatProvider({
     },
     [activeConversationKey, removeConversation, addConversation, setActiveConversationKey, t]
   );
-
-  const confirmDeleteConversation = useCallback(() => {
-    const key = pendingDeleteConversationKey;
-    setPendingDeleteConversationKey(null);
-    if (!key) {
-      return;
-    }
-    deleteConversation(key);
-  }, [pendingDeleteConversationKey, deleteConversation]);
-
-  const cancelDeleteConversation = useCallback(() => {
-    setPendingDeleteConversationKey(null);
-  }, []);
 
   const value: ChatContextValue = {
     workspaceId,
@@ -154,11 +131,7 @@ export function ChatProvider({
     isRequesting,
     abort,
     handleNewConversation,
-    deleteConversation,
-    pendingDeleteConversationKey,
-    requestDeleteConversation,
-    confirmDeleteConversation,
-    cancelDeleteConversation
+    deleteConversation
   };
 
   return (

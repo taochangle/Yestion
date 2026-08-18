@@ -23,6 +23,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import { useChat } from "@/components/chat-context";
 import PageTree from "@/components/PageTree";
 import SettingsDialog from "@/components/SettingsDialog";
+import Popconfirm from "@/components/ui/popconfirm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -427,15 +428,24 @@ export default function WorkspaceSidebar({
                 items: [
                   {
                     key: "delete",
-                    label: t("common.delete"),
-                    danger: true
+                    danger: true,
+                    label: (
+                      <Popconfirm
+                        title={t("chat.deleteConversationTitle")}
+                        description={t("chat.deleteConversationMessage")}
+                        okText={t("common.delete")}
+                        cancelText={t("common.cancel")}
+                        danger
+                        onConfirm={() =>
+                          chat.deleteConversation(conversation.key)
+                        }
+                      >
+                        <span>{t("common.delete")}</span>
+                      </Popconfirm>
+                    ),
+                    onClick: ({ domEvent }) => domEvent.stopPropagation()
                   }
-                ],
-                onClick: ({ key }) => {
-                  if (key === "delete") {
-                    chat.requestDeleteConversation(conversation.key);
-                  }
-                }
+                ]
               })}
             />
           </div>
