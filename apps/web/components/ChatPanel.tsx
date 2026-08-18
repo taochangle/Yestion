@@ -64,7 +64,10 @@ function AssistantMessage({
       <XMarkdown content={content.content} openLinksInNewTab escapeRawHtml />
       {content.sources && content.sources.length > 0 ? (
         <Sources
-          title={t("chat.sourcesTitle", { count: content.sources.length })}
+          title={`${workspaceName ? `${workspaceName} · ` : ""}${t(
+            "chat.sourcesTitle",
+            { count: content.sources.length }
+          )}`}
           items={content.sources.map((source) => ({
             key: source.documentId,
             title: source.title || t("editor.placeholder"),

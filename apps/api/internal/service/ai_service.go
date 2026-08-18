@@ -34,15 +34,19 @@ type AIService interface {
 }
 
 type aiService struct {
-	zvec    *ZVecClient
-	apiKey  string
-	baseURL string
-	model   string
-	topK    int
+	zvec     *ZVecClient
+	apiKey   string
+	baseURL  string
+	model    string
+	topK     int
+	maxScore float64
 }
 
-func NewAIService(zvec *ZVecClient, apiKey, baseURL, model string, topK int) AIService {
-	return &aiService{zvec: zvec, apiKey: apiKey, baseURL: strings.TrimSuffix(baseURL, "/"), model: model, topK: topK}
+func NewAIService(zvec *ZVecClient, apiKey, baseURL, model string, topK int, maxScore float64) AIService {
+	return &aiService{
+		zvec: zvec, apiKey: apiKey, baseURL: strings.TrimSuffix(baseURL, "/"),
+		model: model, topK: topK, maxScore: maxScore,
+	}
 }
 
 func (s *aiService) Ready() error {
@@ -77,6 +81,7 @@ func (s *aiService) StreamChat(
 		if err != nil {
 			return fmt.Errorf("search local knowledge: %w", err)
 		}
+		hits = filterSources(hits, s.maxScore)
 	}
 	if useKnowledge && len(hits) > 0 {
 		var contextBuilder strings.Builder
@@ -135,6 +140,22 @@ func (s *aiService) StreamChat(
 		return err
 	}
 	return writeSSE(writer, flusher, "[DONE]", false)
+}
+
+// filterSources drops documents that carry no text or are too far from the
+// query, so empty or unrelated pages are not shown as sources.
+func filterSources(hits []ZVecHit, maxScore float64) []ZVecHit {
+	filtered := make([]ZVecHit, 0, len(hits))
+	for _, hit := range hits {
+		if strings.TrimSpace(hit.Content) == "" {
+			continue
+		}
+		if maxScore > 0 && hit.Score > maxScore {
+			continue
+		}
+		filtered = append(filtered, hit)
+	}
+	return filtered
 }
 
 type zvecDeltaJSON struct {

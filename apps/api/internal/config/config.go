@@ -24,6 +24,7 @@ type Config struct {
 	DeepSeekBaseURL    string
 	DeepSeekModel      string
 	ChatTopK           int
+	ChatSourceMaxScore float64
 }
 
 func Load() Config {
@@ -51,6 +52,7 @@ func Load() Config {
 		DeepSeekBaseURL:    getEnv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
 		DeepSeekModel:      getEnv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
 		ChatTopK:           getEnvInt("CHAT_TOP_K", 5),
+		ChatSourceMaxScore: getEnvFloat("CHAT_SOURCE_MAX_SCORE", 1.2),
 	}
 }
 
@@ -63,6 +65,14 @@ func getEnv(key, fallback string) string {
 
 func getEnvInt(key string, fallback int) int {
 	value, err := strconv.Atoi(os.Getenv(key))
+	if err != nil {
+		return fallback
+	}
+	return value
+}
+
+func getEnvFloat(key string, fallback float64) float64 {
+	value, err := strconv.ParseFloat(os.Getenv(key), 64)
 	if err != nil {
 		return fallback
 	}
