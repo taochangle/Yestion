@@ -30,6 +30,7 @@ func main() {
 	databaseRepository := repository.NewDatabaseRepository(db)
 	shareRepository := repository.NewShareRepository(db)
 	templateRepository := repository.NewTemplateRepository(db)
+	chatRepository := repository.NewChatRepository(db)
 
 	authService := service.NewAuthService(userRepository, cfg.JWTSecret, cfg.JWTExpiresIn)
 	authHandler := handler.NewAuthHandler(authService)
@@ -49,6 +50,7 @@ func main() {
 	}
 
 	aiService := service.NewAIService(zvecClient, cfg.DeepSeekAPIKey, cfg.DeepSeekBaseURL, cfg.DeepSeekModel, cfg.ChatTopK)
+	chatHistoryService := service.NewChatHistoryService(chatRepository, workspaceRepository)
 
 	workspaceHandler := handler.NewWorkspaceHandler(workspaceService)
 	blockHandler := handler.NewBlockHandler(blockService)
@@ -57,7 +59,7 @@ func main() {
 	searchHandler := handler.NewSearchHandler(searchService)
 	shareHandler := handler.NewShareHandler(shareService)
 	templateHandler := handler.NewTemplateHandler(templateService)
-	chatHandler := handler.NewChatHandler(aiService, workspaceService)
+	chatHandler := handler.NewChatHandler(aiService, workspaceService, chatHistoryService)
 
 	engine := router.New(cfg, authHandler, workspaceHandler, blockHandler, fileHandler, databaseHandler, searchHandler, shareHandler, templateHandler, chatHandler)
 	if err := engine.Run(":" + cfg.Port); err != nil {

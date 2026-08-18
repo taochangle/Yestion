@@ -106,6 +106,12 @@ func New(
 		chat := api.Group("/chat", middleware.Auth(cfg.JWTSecret))
 		{
 			chat.POST("", chatHandler.Stream)
+			chat.GET("/conversations", chatHandler.ListConversations)
+			chat.POST("/conversations", chatHandler.CreateConversation)
+			chat.PATCH("/conversations/:id", chatHandler.RenameConversation)
+			chat.DELETE("/conversations/:id", chatHandler.DeleteConversation)
+			chat.GET("/conversations/:id/messages", chatHandler.ListMessages)
+			chat.POST("/conversations/:id/messages", chatHandler.AddMessage)
 		}
 	}
 

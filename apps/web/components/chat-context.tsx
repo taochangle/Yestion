@@ -4,14 +4,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
+  useRef,
   useState,
   type ReactNode
 } from "react";
-import {
-  useXChat,
-  useXConversations,
-  XRequest
-} from "@ant-design/x-sdk";
+import { useXChat, useXConversations, XRequest } from "@ant-design/x-sdk";
 import type { MessageInfo } from "@ant-design/x-sdk";
 import {
   YestionChatProvider,
@@ -19,6 +17,11 @@ import {
   type ChatMessage,
   type ChatOutput
 } from "@/components/chat-provider";
+import {
+  apiFetch,
+  type ChatConversationRecord,
+  type ChatMessageRecord
+} from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
 // Providers bake workspaceId + knowledge flag into the request params, so the
@@ -66,6 +69,10 @@ type ChatContextValue = {
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
+function toConversationData(record: ChatConversationRecord) {
+  return { key: record.id, label: record.title };
+}
+
 export function ChatProvider({
   workspaceId,
   children
@@ -75,21 +82,102 @@ export function ChatProvider({
 }) {
   const { t } = useI18n();
   const [knowledgeEnabled, setKnowledgeEnabled] = useState(true);
+  // Tracks conversations created this session that deserve an auto-title from
+  // their first user message, and message ids already persisted to the server.
+  const untitledRef = useRef(new Map<string, boolean>());
+  const savedRef = useRef(new Set<string>());
 
   const {
     conversations,
     activeConversationKey,
     setActiveConversationKey,
     addConversation,
-    removeConversation
+    removeConversation,
+    setConversation,
+    setConversations
   } = useXConversations({
-    defaultConversations: [{ key: "default", label: t("chat.newConversation") }],
-    defaultActiveConversationKey: "default"
+    defaultConversations: [],
+    defaultActiveConversationKey: ""
   });
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      if (!workspaceId) {
+        setConversations([]);
+        setActiveConversationKey("");
+        return;
+      }
+      try {
+        const result = await apiFetch<{ conversations: ChatConversationRecord[] }>(
+          `/api/chat/conversations?workspaceId=${workspaceId}`
+        );
+        if (!active) {
+          return;
+        }
+        if (result.conversations.length === 0) {
+          const created = await apiFetch<{ conversation: ChatConversationRecord }>(
+            "/api/chat/conversations",
+            {
+              method: "POST",
+              body: JSON.stringify({
+                workspaceId,
+                title: t("chat.newConversation")
+              })
+            }
+          );
+          untitledRef.current.set(created.conversation.id, true);
+          setConversations([toConversationData(created.conversation)]);
+          setActiveConversationKey(created.conversation.id);
+          return;
+        }
+        setConversations(
+          result.conversations.map((conversation) =>
+            toConversationData(conversation)
+          )
+        );
+        setActiveConversationKey(result.conversations[0].id);
+      } catch {
+        if (active) {
+          setConversations([]);
+          setActiveConversationKey("");
+        }
+      }
+    }
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [setActiveConversationKey, setConversations, t, workspaceId]);
 
   const { messages, onRequest, isRequesting, abort } = useXChat({
     provider: getProvider(activeConversationKey, workspaceId, knowledgeEnabled),
     conversationKey: activeConversationKey,
+    defaultMessages: async (info?: { conversationKey?: string }) => {
+      const conversationKey = info?.conversationKey;
+      if (!conversationKey) {
+        return [];
+      }
+      try {
+        const result = await apiFetch<{ messages: ChatMessageRecord[] }>(
+          `/api/chat/conversations/${conversationKey}/messages`
+        );
+        return result.messages.map((record) => {
+          savedRef.current.add(record.id);
+          return {
+            id: record.id,
+            message: {
+              role: record.role,
+              content: record.content,
+              ...(record.reasoning ? { reasoning: record.reasoning } : {})
+            },
+            status: "success" as const
+          };
+        });
+      } catch {
+        return [];
+      }
+    },
     requestFallback: (_, { error: requestError, messageInfo }) => {
       if (requestError?.name === "AbortError") {
         return {
@@ -101,25 +189,101 @@ export function ChatProvider({
     }
   });
 
-  const handleNewConversation = useCallback(() => {
-    const key = `conv-${Date.now()}`;
-    addConversation({
-      key,
-      label: `${t("chat.newConversation")} ${conversations.length + 1}`
-    });
-    setActiveConversationKey(key);
-  }, [addConversation, conversations.length, setActiveConversationKey, t]);
+  // Persist completed messages to the server as they settle.
+  useEffect(() => {
+    if (!activeConversationKey) {
+      return;
+    }
+    for (const item of messages) {
+      const id = String(item.id);
+      if (savedRef.current.has(id)) {
+        continue;
+      }
+      const { message, status } = item;
+      if (status === "local" && message.role === "user") {
+        savedRef.current.add(id);
+        const content = message.content;
+        void apiFetch(`/api/chat/conversations/${activeConversationKey}/messages`, {
+          method: "POST",
+          body: JSON.stringify({ role: "user", content })
+        }).catch(() => {});
+        if (untitledRef.current.get(activeConversationKey)) {
+          untitledRef.current.set(activeConversationKey, false);
+          const title = content.slice(0, 30) || t("chat.newConversation");
+          void apiFetch(`/api/chat/conversations/${activeConversationKey}`, {
+            method: "PATCH",
+            body: JSON.stringify({ title })
+          })
+            .then(() => {
+              setConversation(activeConversationKey, {
+                key: activeConversationKey,
+                label: title
+              });
+            })
+            .catch(() => {});
+        }
+      } else if (status === "success" && message.role === "assistant") {
+        savedRef.current.add(id);
+        void apiFetch(`/api/chat/conversations/${activeConversationKey}/messages`, {
+          method: "POST",
+          body: JSON.stringify({
+            role: "assistant",
+            content: message.content,
+            reasoning: message.reasoning ?? ""
+          })
+        }).catch(() => {});
+      }
+    }
+  }, [activeConversationKey, messages, setConversation, t]);
+
+  const handleNewConversation = useCallback(async () => {
+    if (!workspaceId) {
+      return;
+    }
+    try {
+      const result = await apiFetch<{ conversation: ChatConversationRecord }>(
+        "/api/chat/conversations",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            workspaceId,
+            title: t("chat.newConversation")
+          })
+        }
+      );
+      untitledRef.current.set(result.conversation.id, true);
+      addConversation(toConversationData(result.conversation));
+      setActiveConversationKey(result.conversation.id);
+    } catch {
+      const key = `conv-${Date.now()}`;
+      addConversation({
+        key,
+        label: `${t("chat.newConversation")} ${conversations.length + 1}`
+      });
+      setActiveConversationKey(key);
+    }
+  }, [
+    addConversation,
+    conversations.length,
+    setActiveConversationKey,
+    t,
+    workspaceId
+  ]);
 
   const deleteConversation = useCallback(
     (key: string) => {
+      if (!key) {
+        return;
+      }
       removeConversation(key);
+      void apiFetch(`/api/chat/conversations/${key}`, {
+        method: "DELETE"
+      }).catch(() => {});
       if (key === activeConversationKey) {
-        const nextKey = `conv-${Date.now()}`;
-        addConversation({ key: nextKey, label: t("chat.newConversation") });
-        setActiveConversationKey(nextKey);
+        void handleNewConversation();
       }
     },
-    [activeConversationKey, removeConversation, addConversation, setActiveConversationKey, t]
+    [activeConversationKey, handleNewConversation, removeConversation]
   );
 
   const value: ChatContextValue = {

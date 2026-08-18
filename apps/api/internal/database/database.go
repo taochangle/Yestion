@@ -40,6 +40,8 @@ func Migrate(db *gorm.DB) error {
 		&model.Share{},
 		&model.Template{},
 		&model.Revision{},
+		&model.ChatConversation{},
+		&model.ChatMessage{},
 	); err != nil {
 		return fmt.Errorf("migrate database: %w", err)
 	}

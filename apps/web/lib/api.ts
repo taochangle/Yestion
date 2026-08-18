@@ -172,6 +172,24 @@ export type Revision = {
   createdAt: string;
 };
 
+export type ChatConversationRecord = {
+  id: string;
+  workspaceId: string;
+  title: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ChatMessageRecord = {
+  id: string;
+  conversationId: string;
+  role: "user" | "assistant";
+  content: string;
+  reasoning: string;
+  createdAt: string;
+};
+
 export function getCookie(name: string): string | null {
   if (typeof document === "undefined") {
     return null;
