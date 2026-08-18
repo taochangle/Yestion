@@ -349,7 +349,7 @@ export default function PageEditor({
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+    <main className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 pb-4">
       <div className="sticky top-0 z-20 -mx-4 flex items-center justify-between gap-3 bg-white px-4 pb-2 pt-2">
         <nav className="flex min-w-0 flex-wrap items-center gap-1 text-sm leading-none text-zinc-500">
           {sidebarCollapsed && (

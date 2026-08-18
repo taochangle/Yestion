@@ -7,6 +7,8 @@ import { XProvider } from "@ant-design/x";
 import { theme as antdTheme } from "antd";
 import enUS from "antd/locale/en_US";
 import zhCN from "antd/locale/zh_CN";
+import { Bot } from "lucide-react";
+import AiPanel from "@/components/AiPanel";
 import ChatPanel from "@/components/ChatPanel";
 import { ChatProvider } from "@/components/chat-context";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -97,6 +99,7 @@ export default function DashboardPage({
     }
     return "home";
   });
+  const [aiOpen, setAiOpen] = useState(false);
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_MODE_KEY, sidebarMode);
@@ -573,7 +576,7 @@ export default function DashboardPage({
 
         <div
           className={
-            sidebarMode === "chat" ? "hidden" : "flex min-h-0 flex-1"
+            sidebarMode === "chat" ? "hidden" : "flex min-h-0 min-w-0 flex-1"
           }
         >
           {selectedBlock?.type === "database" ? (
@@ -613,11 +616,31 @@ export default function DashboardPage({
               onOpenSidebar={() => setSidebarCollapsed(false)}
             />
           )}
+          {aiOpen ? (
+            <AiPanel
+              workspaceName={
+                workspaces.find((item) => item.id === activeWorkspaceId)?.name
+              }
+              onOpenSource={handleOpenChatSource}
+              onClose={() => setAiOpen(false)}
+            />
+          ) : null}
         </div>
+
+        {sidebarMode === "home" && !aiOpen ? (
+          <button
+            type="button"
+            onClick={() => setAiOpen(true)}
+            className="fixed bottom-6 right-6 z-40 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-colors hover:bg-indigo-500"
+            aria-label="AI"
+          >
+            <Bot size={22} />
+          </button>
+        ) : null}
 
         <div
           className={
-            sidebarMode === "chat" ? "flex min-h-0 flex-1" : "hidden"
+            sidebarMode === "chat" ? "flex min-h-0 min-w-0 flex-1" : "hidden"
           }
         >
           <ChatPanel

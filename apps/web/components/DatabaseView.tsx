@@ -417,7 +417,7 @@ export default function DatabaseView({
 
   if (loading) {
     return (
-      <main className="min-h-0 flex-1 overflow-y-auto p-10">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-10">
         <p className="text-zinc-500">{t("database.loading")}</p>
       </main>
     );
@@ -425,7 +425,7 @@ export default function DatabaseView({
 
   if (error || !database) {
     return (
-      <main className="min-h-0 flex-1 overflow-y-auto p-10">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-10">
         <p className="text-red-600">{error ?? t("database.unavailable")}</p>
       </main>
     );
@@ -433,7 +433,7 @@ export default function DatabaseView({
 
   return (
     <>
-      <main className="min-h-0 flex-1 overflow-y-auto p-10">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-10">
       <nav className="mb-4 flex flex-wrap items-center gap-1 text-sm text-zinc-500">
         {sidebarCollapsed && (
           <button
