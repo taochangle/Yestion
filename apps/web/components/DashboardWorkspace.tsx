@@ -573,7 +573,7 @@ export default function DashboardPage({
 
         <div
           className={
-            sidebarMode === "chat" ? "hidden" : "min-h-0 flex-1"
+            sidebarMode === "chat" ? "hidden" : "flex min-h-0 flex-1"
           }
         >
           {selectedBlock?.type === "database" ? (
@@ -617,7 +617,7 @@ export default function DashboardPage({
 
         <div
           className={
-            sidebarMode === "chat" ? "min-h-0 flex-1" : "hidden"
+            sidebarMode === "chat" ? "flex min-h-0 flex-1" : "hidden"
           }
         >
           <ChatPanel
