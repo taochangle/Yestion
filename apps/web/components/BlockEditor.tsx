@@ -182,6 +182,7 @@ export default function BlockEditor({
   const documentChangeRef = useRef(onDocumentChange);
   const imageUploadRef = useRef(onUploadImage);
   const fileUploadRef = useRef(onUploadFile);
+  const commandsRef = useRef<SlashCommand[]>([]);
   const [slashMenu, setSlashMenu] = useState<SlashMenuState>(emptyMenu);
   const [toolbar, setToolbar] = useState<ToolbarState>(emptyToolbar);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -273,12 +274,16 @@ export default function BlockEditor({
 
     const coordinates = editor.view.coordsAtPos(from);
 
+    const activeType = getActiveBlockType(editor);
+    const activeIndex = commandsRef.current.findIndex(
+      (command) => command.id === activeType
+    );
     setToolbar({
       open: true,
       top: coordinates.bottom + 4,
       left: coordinates.left,
-      activeType: getActiveBlockType(editor),
-      selectedIndex: 0
+      activeType,
+      selectedIndex: activeIndex >= 0 ? activeIndex : 0
     });
   }, []);
 
@@ -586,6 +591,10 @@ export default function BlockEditor({
     () => (editor ? getSlashCommands(editor, breadcrumb, t) : []),
     [breadcrumb, editor, t]
   );
+
+  useEffect(() => {
+    commandsRef.current = commands;
+  }, [commands]);
 
   const filteredCommands = useMemo(() => {
     const query = slashMenu.query.trim().toLowerCase();
