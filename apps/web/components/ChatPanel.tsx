@@ -64,14 +64,12 @@ function AssistantMessage({
       <XMarkdown content={content.content} openLinksInNewTab escapeRawHtml />
       {content.sources && content.sources.length > 0 ? (
         <Sources
-          title={`${workspaceName ? `${workspaceName} · ` : ""}${t(
-            "chat.sourcesTitle",
-            { count: content.sources.length }
-          )}`}
+          title={t("chat.sourcesTitle", { count: content.sources.length })}
           items={content.sources.map((source) => ({
             key: source.documentId,
-            title: source.title || t("editor.placeholder"),
-            description: workspaceName
+            title: workspaceName
+              ? `${workspaceName} / ${source.title || t("editor.placeholder")}`
+              : source.title || t("editor.placeholder")
           }))}
           onClick={(item) => onOpenSource?.(String(item.key))}
         />
