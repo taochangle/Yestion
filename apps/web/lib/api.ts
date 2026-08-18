@@ -174,7 +174,7 @@ export type Revision = {
 
 export type ChatConversationRecord = {
   id: string;
-  workspaceId: string;
+  workspaceId: string | null;
   title: string;
   createdBy: string;
   createdAt: string;

@@ -119,7 +119,6 @@ export default function ChatPanel({
     setKnowledgeEnabled,
     thinkingEnabled,
     setThinkingEnabled,
-    workspaceId,
     activeConversationKey,
     messages,
     onRequest,
@@ -320,7 +319,6 @@ export default function ChatPanel({
           onSubmit={handleSubmit}
           loading={isRequesting}
           onCancel={abort}
-          disabled={!workspaceId}
           placeholder={t("chat.placeholder")}
           className="mx-auto max-w-3xl"
           suffix={false}

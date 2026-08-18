@@ -13,7 +13,7 @@ var ErrConversationNotFound = errors.New("conversation not found")
 type ChatRepository interface {
 	CreateConversation(ctx context.Context, conversation *model.ChatConversation) error
 	FindConversationByID(ctx context.Context, id string) (*model.ChatConversation, error)
-	ListConversationsByWorkspace(ctx context.Context, workspaceID string) ([]model.ChatConversation, error)
+	ListConversationsByUser(ctx context.Context, userID string) ([]model.ChatConversation, error)
 	UpdateConversation(ctx context.Context, conversation *model.ChatConversation) error
 	DeleteConversation(ctx context.Context, id string) error
 	DeleteMessagesByConversation(ctx context.Context, conversationID string) error
@@ -44,10 +44,10 @@ func (r *chatRepository) FindConversationByID(ctx context.Context, id string) (*
 	return &conversation, nil
 }
 
-func (r *chatRepository) ListConversationsByWorkspace(ctx context.Context, workspaceID string) ([]model.ChatConversation, error) {
+func (r *chatRepository) ListConversationsByUser(ctx context.Context, userID string) ([]model.ChatConversation, error) {
 	var conversations []model.ChatConversation
 	err := r.db.WithContext(ctx).
-		Where("workspace_id = ?", workspaceID).
+		Where("created_by = ?", userID).
 		Order("updated_at DESC").
 		Find(&conversations).Error
 	return conversations, err

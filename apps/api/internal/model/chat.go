@@ -4,9 +4,9 @@ import "time"
 
 type ChatConversation struct {
 	ID          string    `gorm:"type:uuid;primaryKey" json:"id"`
-	WorkspaceID string    `gorm:"type:uuid;not null;index" json:"workspaceId"`
+	WorkspaceID *string   `gorm:"type:uuid;index" json:"workspaceId"`
 	Title       string    `gorm:"size:255;not null" json:"title"`
-	CreatedBy   string    `gorm:"type:uuid;not null" json:"createdBy"`
+	CreatedBy   string    `gorm:"type:uuid;not null;index" json:"createdBy"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }

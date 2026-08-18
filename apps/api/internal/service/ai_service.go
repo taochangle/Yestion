@@ -58,11 +58,11 @@ func (s *aiService) Ready() error {
 
 func (s *aiService) StreamChat(
 	ctx context.Context,
-		workspaceID string,
-		messages []ChatMessage,
-		useKnowledge bool,
-		thinkingEnabled bool,
-		writer io.Writer,
+	workspaceID string,
+	messages []ChatMessage,
+	useKnowledge bool,
+	thinkingEnabled bool,
+	writer io.Writer,
 ) error {
 	if err := s.Ready(); err != nil {
 		return err

@@ -50,7 +50,7 @@ func main() {
 	}
 
 	aiService := service.NewAIService(zvecClient, cfg.DeepSeekAPIKey, cfg.DeepSeekBaseURL, cfg.DeepSeekModel, cfg.ChatTopK, cfg.ChatSourceMaxScore)
-	chatHistoryService := service.NewChatHistoryService(chatRepository, workspaceRepository)
+	chatHistoryService := service.NewChatHistoryService(chatRepository)
 
 	workspaceHandler := handler.NewWorkspaceHandler(workspaceService)
 	blockHandler := handler.NewBlockHandler(blockService)

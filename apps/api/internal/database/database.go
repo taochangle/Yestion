@@ -45,5 +45,12 @@ func Migrate(db *gorm.DB) error {
 	); err != nil {
 		return fmt.Errorf("migrate database: %w", err)
 	}
+	// Chat conversations are user-scoped; a workspace is an optional
+	// association used only when the chat asks for workspace knowledge.
+	if err := db.Exec(
+		"ALTER TABLE chat_conversations ALTER COLUMN workspace_id DROP NOT NULL",
+	).Error; err != nil {
+		return fmt.Errorf("relax chat conversation workspace constraint: %w", err)
+	}
 	return nil
 }

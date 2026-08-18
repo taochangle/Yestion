@@ -23,7 +23,7 @@ func NewChatHandler(
 }
 
 type chatRequest struct {
-	WorkspaceID  string                `json:"workspaceId" binding:"required"`
+	WorkspaceID  string                `json:"workspaceId"`
 	Messages     []service.ChatMessage `json:"messages" binding:"required,min=1"`
 	UseKnowledge bool                  `json:"useKnowledge"`
 	Thinking     *bool                 `json:"thinking"`
@@ -37,9 +37,17 @@ func (h *ChatHandler) Stream(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.workspaces.Get(c.Request.Context(), userID(c), request.WorkspaceID); err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "you do not have access to this workspace"})
-		return
+	if request.UseKnowledge {
+		if request.WorkspaceID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "workspaceId is required when using workspace knowledge",
+			})
+			return
+		}
+		if _, err := h.workspaces.Get(c.Request.Context(), userID(c), request.WorkspaceID); err != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "you do not have access to this workspace"})
+			return
+		}
 	}
 	if err := h.ai.Ready(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -72,7 +80,6 @@ func (h *ChatHandler) ListConversations(c *gin.Context) {
 	conversations, err := h.history.ListConversations(
 		c.Request.Context(),
 		userID(c),
-		c.Query("workspaceId"),
 	)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
@@ -82,8 +89,8 @@ func (h *ChatHandler) ListConversations(c *gin.Context) {
 }
 
 type createConversationRequest struct {
-	WorkspaceID string `json:"workspaceId" binding:"required"`
-	Title       string `json:"title"`
+	WorkspaceID *string `json:"workspaceId"`
+	Title       string  `json:"title"`
 }
 
 func (h *ChatHandler) CreateConversation(c *gin.Context) {

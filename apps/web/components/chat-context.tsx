@@ -112,14 +112,9 @@ export function ChatProvider({
   useEffect(() => {
     let active = true;
     async function load() {
-      if (!workspaceId) {
-        setConversations([]);
-        setActiveConversationKey("");
-        return;
-      }
       try {
         const result = await apiFetch<{ conversations: ChatConversationRecord[] }>(
-          `/api/chat/conversations?workspaceId=${workspaceId}`
+          "/api/chat/conversations"
         );
         if (!active) {
           return;
@@ -130,7 +125,7 @@ export function ChatProvider({
             {
               method: "POST",
               body: JSON.stringify({
-                workspaceId,
+                workspaceId: workspaceId || null,
                 title: t("chat.newConversation")
               })
             }
@@ -255,16 +250,13 @@ export function ChatProvider({
   }, [activeConversationKey, messages, setConversation, t]);
 
   const handleNewConversation = useCallback(async () => {
-    if (!workspaceId) {
-      return;
-    }
     try {
       const result = await apiFetch<{ conversation: ChatConversationRecord }>(
         "/api/chat/conversations",
         {
           method: "POST",
           body: JSON.stringify({
-            workspaceId,
+            workspaceId: workspaceId || null,
             title: t("chat.newConversation")
           })
         }

@@ -10,10 +10,10 @@ import (
 	"github.com/my-notion/yestion/api/internal/repository"
 )
 
-// ChatHistoryService persists chat conversations and messages per workspace.
+// ChatHistoryService persists user-scoped chat conversations and messages.
 type ChatHistoryService interface {
-	ListConversations(ctx context.Context, userID, workspaceID string) ([]model.ChatConversation, error)
-	CreateConversation(ctx context.Context, userID, workspaceID, title string) (*model.ChatConversation, error)
+	ListConversations(ctx context.Context, userID string) ([]model.ChatConversation, error)
+	CreateConversation(ctx context.Context, userID string, workspaceID *string, title string) (*model.ChatConversation, error)
 	RenameConversation(ctx context.Context, userID, conversationID, title string) (*model.ChatConversation, error)
 	DeleteConversation(ctx context.Context, userID, conversationID string) error
 	ListMessages(ctx context.Context, userID, conversationID string) ([]model.ChatMessage, error)
@@ -25,28 +25,23 @@ type ChatHistoryService interface {
 }
 
 type chatHistoryService struct {
-	chats      repository.ChatRepository
-	workspaces repository.WorkspaceRepository
+	chats repository.ChatRepository
 }
 
-func NewChatHistoryService(
-	chats repository.ChatRepository,
-	workspaces repository.WorkspaceRepository,
-) ChatHistoryService {
-	return &chatHistoryService{chats: chats, workspaces: workspaces}
+func NewChatHistoryService(chats repository.ChatRepository) ChatHistoryService {
+	return &chatHistoryService{chats: chats}
 }
 
-func (s *chatHistoryService) ListConversations(ctx context.Context, userID, workspaceID string) ([]model.ChatConversation, error) {
-	if err := s.ensureMember(ctx, workspaceID, userID); err != nil {
-		return nil, err
-	}
-	return s.chats.ListConversationsByWorkspace(ctx, workspaceID)
+func (s *chatHistoryService) ListConversations(ctx context.Context, userID string) ([]model.ChatConversation, error) {
+	return s.chats.ListConversationsByUser(ctx, userID)
 }
 
-func (s *chatHistoryService) CreateConversation(ctx context.Context, userID, workspaceID, title string) (*model.ChatConversation, error) {
-	if err := s.ensureMember(ctx, workspaceID, userID); err != nil {
-		return nil, err
-	}
+func (s *chatHistoryService) CreateConversation(
+	ctx context.Context,
+	userID string,
+	workspaceID *string,
+	title string,
+) (*model.ChatConversation, error) {
 	title = strings.TrimSpace(title)
 	if title == "" {
 		title = "新对话"
@@ -68,7 +63,7 @@ func (s *chatHistoryService) RenameConversation(ctx context.Context, userID, con
 	if err != nil {
 		return nil, err
 	}
-	if err := s.ensureMember(ctx, conversation.WorkspaceID, userID); err != nil {
+	if err := s.ensureOwner(conversation, userID); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(title) != "" {
@@ -85,7 +80,7 @@ func (s *chatHistoryService) DeleteConversation(ctx context.Context, userID, con
 	if err != nil {
 		return err
 	}
-	if err := s.ensureMember(ctx, conversation.WorkspaceID, userID); err != nil {
+	if err := s.ensureOwner(conversation, userID); err != nil {
 		return err
 	}
 	if err := s.chats.DeleteMessagesByConversation(ctx, conversationID); err != nil {
@@ -99,7 +94,7 @@ func (s *chatHistoryService) ListMessages(ctx context.Context, userID, conversat
 	if err != nil {
 		return nil, err
 	}
-	if err := s.ensureMember(ctx, conversation.WorkspaceID, userID); err != nil {
+	if err := s.ensureOwner(conversation, userID); err != nil {
 		return nil, err
 	}
 	return s.chats.ListMessagesByConversation(ctx, conversationID)
@@ -114,7 +109,7 @@ func (s *chatHistoryService) AddMessage(
 	if err != nil {
 		return nil, err
 	}
-	if err := s.ensureMember(ctx, conversation.WorkspaceID, userID); err != nil {
+	if err := s.ensureOwner(conversation, userID); err != nil {
 		return nil, err
 	}
 	if role != "user" && role != "assistant" {
@@ -134,12 +129,9 @@ func (s *chatHistoryService) AddMessage(
 	return message, nil
 }
 
-func (s *chatHistoryService) ensureMember(ctx context.Context, workspaceID, userID string) error {
-	if _, err := s.workspaces.FindMember(ctx, workspaceID, userID); err != nil {
-		if errors.Is(err, repository.ErrMemberNotFound) {
-			return ErrForbidden
-		}
-		return err
+func (s *chatHistoryService) ensureOwner(conversation *model.ChatConversation, userID string) error {
+	if conversation.CreatedBy != userID {
+		return ErrForbidden
 	}
 	return nil
 }
