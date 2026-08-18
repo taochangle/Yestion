@@ -11,6 +11,7 @@ import {
   Welcome
 } from "@ant-design/x";
 import { XMarkdown } from "@ant-design/x-markdown";
+import Latex from "@ant-design/x-markdown/plugins/Latex";
 import { Avatar } from "antd";
 import {
   Bot,
@@ -55,7 +56,12 @@ function AssistantMessage({
           {content.reasoning}
         </Think>
       ) : null}
-      <XMarkdown content={content.content} openLinksInNewTab escapeRawHtml />
+      <XMarkdown
+        content={content.content}
+        openLinksInNewTab
+        escapeRawHtml
+        config={{ extensions: Latex() }}
+      />
       {content.sources && content.sources.length > 0 ? (
         <Sources
           title={t("chat.sourcesTitle", { count: content.sources.length })}
