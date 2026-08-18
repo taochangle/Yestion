@@ -3,7 +3,12 @@
 import { type JSONContent } from "@tiptap/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { XProvider } from "@ant-design/x";
+import { theme as antdTheme } from "antd";
+import enUS from "antd/locale/en_US";
+import zhCN from "antd/locale/zh_CN";
 import ChatPanel from "@/components/ChatPanel";
+import { ChatProvider } from "@/components/chat-context";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import DatabaseView from "@/components/DatabaseView";
 import MovePageDialog from "@/components/MovePageDialog";
@@ -28,9 +33,32 @@ import {
   Workspace
 } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 const ACTIVE_WORKSPACE_KEY = "yestion.activeWorkspaceId";
 const ACTIVE_BLOCK_PREFIX = "yestion.activeBlockId:";
+
+function useResolvedTheme(): "light" | "dark" {
+  const { theme } = useTheme();
+  const [systemResolved, setSystemResolved] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") {
+      return "light";
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  });
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setSystemResolved(media.matches ? "dark" : "light");
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  return theme === "system" ? systemResolved : theme;
+}
 
 function activeBlockKey(workspaceId: string) {
   return `${ACTIVE_BLOCK_PREFIX}${workspaceId}`;
@@ -42,7 +70,8 @@ export default function DashboardPage({
   initialMode?: "home" | "chat";
 }) {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const resolvedTheme = useResolvedTheme();
   const [user, setUser] = useState<User | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState("");
@@ -485,7 +514,16 @@ export default function DashboardPage({
     : null;
 
   return (
-    <>
+    <ChatProvider workspaceId={activeWorkspaceId}>
+      <XProvider
+        theme={{
+          algorithm:
+            resolvedTheme === "dark"
+              ? antdTheme.darkAlgorithm
+              : antdTheme.defaultAlgorithm
+        }}
+        locale={locale === "zh" ? zhCN : enUS}
+      >
       <div className="flex h-screen overflow-hidden bg-white">
         <WorkspaceSidebar
           user={user}
@@ -560,7 +598,6 @@ export default function DashboardPage({
           }
         >
           <ChatPanel
-            workspaceId={activeWorkspaceId}
             breadcrumb={[
               {
                 id: activeWorkspaceId || "workspace",
@@ -619,7 +656,8 @@ export default function DashboardPage({
           onMove={handleMovePageTo}
         />
       )}
-    </>
+      </XProvider>
+    </ChatProvider>
   );
 }
 

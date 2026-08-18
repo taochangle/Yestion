@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { Conversations } from "@ant-design/x";
 import {
   ChevronDown,
   Check,
@@ -19,6 +20,7 @@ import {
   X
 } from "lucide-react";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useChat } from "@/components/chat-context";
 import PageTree from "@/components/PageTree";
 import SettingsDialog from "@/components/SettingsDialog";
 import { Button } from "@/components/ui/button";
@@ -97,6 +99,7 @@ export default function WorkspaceSidebar({
   onLogout
 }: WorkspaceSidebarProps) {
   const { t } = useI18n();
+  const chat = useChat();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -399,10 +402,42 @@ export default function WorkspaceSidebar({
       </div>
         </>
         ) : (
-          <div className={`min-h-0 flex-1 overflow-y-auto px-4 py-3 pb-20 ${collapsed ? "hidden" : ""}`}>
-            <div className="rounded-lg border border-dashed border-zinc-200 px-3 py-5 text-center text-sm text-zinc-500">
-              {t("sidebar.chatEmpty")}
+          <div
+            className={`min-h-0 flex-1 overflow-y-auto px-2 py-3 pb-20 ${
+              collapsed ? "hidden" : ""
+            }`}
+          >
+            <div className="px-2 pb-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full justify-start gap-2"
+                onClick={chat.handleNewConversation}
+              >
+                <Plus size={14} />
+                {t("chat.newConversation")}
+              </Button>
             </div>
+            <Conversations
+              items={chat.conversations}
+              activeKey={chat.activeConversationKey}
+              onActiveChange={chat.setActiveConversationKey}
+              menu={(conversation) => ({
+                items: [
+                  {
+                    key: "delete",
+                    label: t("common.delete"),
+                    danger: true
+                  }
+                ],
+                onClick: ({ key }) => {
+                  if (key === "delete") {
+                    chat.removeConversation(conversation.key);
+                  }
+                }
+              })}
+            />
           </div>
         )}
 
@@ -416,7 +451,11 @@ export default function WorkspaceSidebar({
                   variant="outline"
                   size="sm"
                   className="pointer-events-auto h-10 w-[188px] justify-center rounded-full border-zinc-300 bg-white shadow-sm"
-                  onClick={() => onModeChange("chat")}
+                  onClick={() =>
+                    mode === "chat"
+                      ? chat.handleNewConversation()
+                      : onModeChange("chat")
+                  }
                 >
                   <MessageCircle size={14} />
                   {t("sidebar.newChat")}
