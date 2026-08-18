@@ -14,12 +14,18 @@ import {
 import { useI18n } from "@/lib/i18n";
 
 export default function AiPanel({
+  variant,
   workspaceName,
   onOpenSource,
+  onFloat,
+  onDock,
   onClose
 }: {
+  variant: "sidebar" | "float";
   workspaceName?: string;
   onOpenSource?: (blockId: string) => void;
+  onFloat: () => void;
+  onDock: () => void;
   onClose: () => void;
 }) {
   const { t } = useI18n();
@@ -31,7 +37,13 @@ export default function AiPanel({
     t("chat.title");
 
   return (
-    <aside className="flex h-full w-[462px] shrink-0 flex-col border-l border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    <aside
+      className={`flex flex-col border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 ${
+        variant === "sidebar"
+          ? "h-full w-[462px] shrink-0 border-l"
+          : "fixed bottom-4 right-4 z-40 h-[500px] w-[450px] overflow-hidden rounded-xl border shadow-2xl"
+      }`}
+    >
       <header className="flex h-[44px] shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-4 dark:border-zinc-800">
         <div className="min-w-0 truncate text-sm font-medium leading-none text-zinc-900 dark:text-zinc-100">
           {title}
@@ -58,8 +70,10 @@ export default function AiPanel({
                   type="button"
                   variant="link"
                   size="sm"
-                  className="h-7 w-7 cursor-pointer p-0"
-                  onClick={onClose}
+                  className={`h-7 w-7 cursor-pointer p-0 ${
+                    variant === "float" ? "bg-zinc-100 dark:bg-zinc-800" : ""
+                  }`}
+                  onClick={onFloat}
                 >
                   <MessageCircle />
                 </Button>
@@ -72,8 +86,10 @@ export default function AiPanel({
                   type="button"
                   variant="link"
                   size="sm"
-                  className="h-7 w-7 cursor-pointer bg-zinc-100 p-0 dark:bg-zinc-800"
-                  aria-pressed
+                  className={`h-7 w-7 cursor-pointer p-0 ${
+                    variant === "sidebar" ? "bg-zinc-100 dark:bg-zinc-800" : ""
+                  }`}
+                  onClick={onDock}
                 >
                   <PanelRight />
                 </Button>

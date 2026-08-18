@@ -99,7 +99,9 @@ export default function DashboardPage({
     }
     return "home";
   });
-  const [aiOpen, setAiOpen] = useState(false);
+  const [aiMode, setAiMode] = useState<"hidden" | "float" | "sidebar">(
+    "hidden"
+  );
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_MODE_KEY, sidebarMode);
@@ -616,26 +618,42 @@ export default function DashboardPage({
               onOpenSidebar={() => setSidebarCollapsed(false)}
             />
           )}
-          {aiOpen ? (
+          {aiMode === "sidebar" ? (
             <AiPanel
+              variant="sidebar"
               workspaceName={
                 workspaces.find((item) => item.id === activeWorkspaceId)?.name
               }
               onOpenSource={handleOpenChatSource}
-              onClose={() => setAiOpen(false)}
+              onFloat={() => setAiMode("float")}
+              onDock={() => setAiMode("sidebar")}
+              onClose={() => setAiMode("hidden")}
             />
           ) : null}
         </div>
 
-        {sidebarMode === "home" && !aiOpen ? (
+        {sidebarMode === "home" && aiMode === "hidden" ? (
           <button
             type="button"
-            onClick={() => setAiOpen(true)}
+            onClick={() => setAiMode("sidebar")}
             className="fixed bottom-6 right-6 z-40 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-colors hover:bg-indigo-500"
             aria-label="AI"
           >
             <Bot size={22} />
           </button>
+        ) : null}
+
+        {sidebarMode === "home" && aiMode === "float" ? (
+          <AiPanel
+            variant="float"
+            workspaceName={
+              workspaces.find((item) => item.id === activeWorkspaceId)?.name
+            }
+            onOpenSource={handleOpenChatSource}
+            onFloat={() => setAiMode("float")}
+            onDock={() => setAiMode("sidebar")}
+            onClose={() => setAiMode("hidden")}
+          />
         ) : null}
 
         <div
