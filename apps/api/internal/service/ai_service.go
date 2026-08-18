@@ -23,7 +23,14 @@ type ChatMessage struct {
 // and optionally grounds the answer in Zvec search results.
 type AIService interface {
 	Ready() error
-	StreamChat(ctx context.Context, workspaceID string, messages []ChatMessage, useKnowledge bool, writer io.Writer) error
+	StreamChat(
+		ctx context.Context,
+		workspaceID string,
+		messages []ChatMessage,
+		useKnowledge bool,
+		useSearch bool,
+		writer io.Writer,
+	) error
 }
 
 type aiService struct {
@@ -50,6 +57,7 @@ func (s *aiService) StreamChat(
 	workspaceID string,
 	messages []ChatMessage,
 	useKnowledge bool,
+	useSearch bool,
 	writer io.Writer,
 ) error {
 	if err := s.Ready(); err != nil {
@@ -62,20 +70,22 @@ func (s *aiService) StreamChat(
 	question := messages[len(messages)-1].Content
 	system := "你是 Yestion 的 AI 助手，帮助用户在个人工作区中查找信息、总结内容和回答问题。回答使用与问题相同的语言，保持简洁、准确。"
 
-	if useKnowledge && s.zvec != nil && strings.TrimSpace(question) != "" {
-		hits, err := s.zvec.Search(ctx, workspaceID, question, s.topK)
+	var hits []ZVecHit
+	if useSearch && s.zvec != nil && strings.TrimSpace(question) != "" {
+		var err error
+		hits, err = s.zvec.Search(ctx, workspaceID, question, s.topK)
 		if err != nil {
 			return fmt.Errorf("search local knowledge: %w", err)
 		}
-		if len(hits) > 0 {
-			var contextBuilder strings.Builder
-			contextBuilder.WriteString("\n\n以下是与你问题相关的本地文档内容：\n")
-			for i, hit := range hits {
-				fmt.Fprintf(&contextBuilder, "\n[文档 %d] %s\n%s\n", i+1, hit.Title, strings.TrimSpace(hit.Content))
-			}
-			contextBuilder.WriteString("\n请优先基于这些本地文档回答；如果文档中没有相关信息，请如实说明，不要编造。")
-			system += contextBuilder.String()
+	}
+	if useKnowledge && len(hits) > 0 {
+		var contextBuilder strings.Builder
+		contextBuilder.WriteString("\n\n以下是与你问题相关的本地文档内容：\n")
+		for i, hit := range hits {
+			fmt.Fprintf(&contextBuilder, "\n[文档 %d] %s\n%s\n", i+1, hit.Title, strings.TrimSpace(hit.Content))
 		}
+		contextBuilder.WriteString("\n请优先基于这些本地文档回答；如果文档中没有相关信息，请如实说明，不要编造。")
+		system += contextBuilder.String()
 	}
 
 	apiMessages := make([]openai.ChatCompletionMessageParamUnion, 0, len(messages)+1)

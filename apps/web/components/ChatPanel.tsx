@@ -3,12 +3,14 @@
 import { useCallback, useMemo, useState } from "react";
 import { Bubble, Prompts, Sender, Think, Welcome } from "@ant-design/x";
 import { XMarkdown } from "@ant-design/x-markdown";
-import { Avatar, Switch } from "antd";
+import { Avatar } from "antd";
 import {
   Bot,
+  BookOpen,
   MoreHorizontal,
   PanelLeftOpen,
   Plus,
+  Search,
   Trash2,
   User
 } from "lucide-react";
@@ -79,6 +81,8 @@ export default function ChatPanel({
   const {
     knowledgeEnabled,
     setKnowledgeEnabled,
+    searchEnabled,
+    setSearchEnabled,
     workspaceId,
     activeConversationKey,
     messages,
@@ -146,14 +150,6 @@ export default function ChatPanel({
         </nav>
 
         <div className="flex shrink-0 items-center gap-1">
-          <span className="mr-1 text-xs text-muted-foreground">
-            {t("chat.knowledge")}
-          </span>
-          <Switch
-            checked={knowledgeEnabled}
-            onChange={setKnowledgeEnabled}
-            size="small"
-          />
           <Button
             type="button"
             variant="link"
@@ -240,6 +236,24 @@ export default function ChatPanel({
           disabled={!workspaceId}
           placeholder={t("chat.placeholder")}
           className="mx-auto max-w-3xl"
+          prefix={
+            <>
+              <Sender.Switch
+                value={knowledgeEnabled}
+                onChange={setKnowledgeEnabled}
+                icon={<BookOpen size={14} />}
+                checkedChildren={t("chat.useWorkspace")}
+                unCheckedChildren={t("chat.useWorkspace")}
+              />
+              <Sender.Switch
+                value={searchEnabled}
+                onChange={setSearchEnabled}
+                icon={<Search size={14} />}
+                checkedChildren={t("chat.useSearch")}
+                unCheckedChildren={t("chat.useSearch")}
+              />
+            </>
+          }
         />
       </div>
     </main>

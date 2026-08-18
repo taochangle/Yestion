@@ -16,6 +16,7 @@ export type ChatMessage = {
 export type ChatInput = {
   workspaceId?: string;
   useKnowledge?: boolean;
+  useSearch?: boolean;
   messages?: Array<{
     role: string;
     content: string;

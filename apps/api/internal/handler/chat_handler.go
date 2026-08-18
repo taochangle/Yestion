@@ -25,6 +25,7 @@ type chatRequest struct {
 	WorkspaceID  string                `json:"workspaceId" binding:"required"`
 	Messages     []service.ChatMessage `json:"messages" binding:"required,min=1"`
 	UseKnowledge bool                  `json:"useKnowledge"`
+	UseSearch    bool                  `json:"useSearch"`
 	TopK         int                   `json:"topk"`
 }
 
@@ -54,6 +55,7 @@ func (h *ChatHandler) Stream(c *gin.Context) {
 		request.WorkspaceID,
 		request.Messages,
 		request.UseKnowledge,
+		request.UseSearch,
 		c.Writer,
 	); err != nil {
 		// The stream may have already started; write a final SSE error frame.
