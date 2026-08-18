@@ -24,6 +24,7 @@ func NewChatHandler(
 
 type chatRequest struct {
 	WorkspaceID  string                `json:"workspaceId"`
+	PageID       string                `json:"pageId"`
 	Messages     []service.ChatMessage `json:"messages" binding:"required,min=1"`
 	UseKnowledge bool                  `json:"useKnowledge"`
 	Thinking     *bool                 `json:"thinking"`
@@ -77,6 +78,9 @@ func (h *ChatHandler) Stream(c *gin.Context) {
 
 	if err := h.ai.StreamChat(
 		c.Request.Context(),
+		userID(c),
+		request.WorkspaceID,
+		request.PageID,
 		knowledgeWorkspaces,
 		request.Messages,
 		request.UseKnowledge,

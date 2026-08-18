@@ -104,10 +104,14 @@ function AssistantMessage({
 
 export default function ChatConversation({
   workspaceName,
+  workspaceId,
+  pageId,
   onOpenSource,
   onInsertToDocument
 }: {
   workspaceName?: string;
+  workspaceId?: string;
+  pageId?: string;
   onOpenSource?: (blockId: string) => void;
   onInsertToDocument?: (markdown: string) => void;
 }) {
@@ -130,9 +134,13 @@ export default function ChatConversation({
       if (!content.trim()) {
         return;
       }
-      onRequest({ messages: [{ role: "user", content }] });
+      onRequest({
+        messages: [{ role: "user", content }],
+        ...(workspaceId ? { workspaceId } : {}),
+        ...(pageId ? { pageId } : {})
+      });
     },
-    [onRequest]
+    [onRequest, pageId, workspaceId]
   );
 
   const handleRegenerate = useCallback(

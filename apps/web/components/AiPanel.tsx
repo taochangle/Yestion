@@ -42,6 +42,8 @@ import { useI18n } from "@/lib/i18n";
 export default function AiPanel({
   variant,
   workspaceName,
+  workspaceId,
+  pageId,
   onOpenSource,
   onInsertToDocument,
   onDuplicatePage,
@@ -55,6 +57,8 @@ export default function AiPanel({
 }: {
   variant: "sidebar" | "float";
   workspaceName?: string;
+  workspaceId?: string;
+  pageId?: string;
   onOpenSource?: (blockId: string) => void;
   onInsertToDocument?: (markdown: string) => void;
   onDuplicatePage?: () => void;
@@ -241,6 +245,8 @@ export default function AiPanel({
 
       <ChatConversation
         workspaceName={workspaceName}
+        workspaceId={workspaceId}
+        pageId={pageId}
         onOpenSource={onOpenSource}
         onInsertToDocument={onInsertToDocument}
       />

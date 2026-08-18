@@ -25,6 +25,8 @@ export type ChatSource = {
 };
 
 export type ChatInput = {
+  workspaceId?: string;
+  pageId?: string;
   useKnowledge?: boolean;
   thinking?: boolean;
   messages?: Array<{
@@ -35,6 +37,14 @@ export type ChatInput = {
 };
 
 export type ChatOutput = Partial<Record<SSEFields, string>>;
+
+type ToolActionHandler = (info: Record<string, unknown>) => void;
+
+let toolActionHandler: ToolActionHandler | null = null;
+
+export function setToolActionHandler(handler: ToolActionHandler | null) {
+  toolActionHandler = handler;
+}
 
 /**
  * OpenAI-compatible provider that also accumulates DeepSeek's
@@ -91,6 +101,25 @@ export class YestionChatProvider extends AbstractChatProvider<
       } catch {
         // ignore malformed sources frame
       }
+    }
+
+    if (chunk?.event === "tool") {
+      try {
+        const raw = chunk.data as string | undefined;
+        if (raw) {
+          toolActionHandler?.(JSON.parse(raw) as Record<string, unknown>);
+        }
+      } catch {
+        // ignore malformed tool frame
+      }
+      return {
+        role: "assistant",
+        content: originMessage?.content || "",
+        ...(originMessage?.reasoning
+          ? { reasoning: originMessage.reasoning }
+          : {}),
+        ...(originMessage?.sources ? { sources: originMessage.sources } : {})
+      };
     }
 
     let content = "";

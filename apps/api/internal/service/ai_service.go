@@ -13,6 +13,7 @@ import (
 	"github.com/my-notion/yestion/api/internal/model"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/shared"
 )
 
 // ChatMessage is one message in a chat conversation.
@@ -27,6 +28,7 @@ type AIService interface {
 	Ready() error
 	StreamChat(
 		ctx context.Context,
+		userID, workspaceID, pageID string,
 		workspaces []KnowledgeWorkspace,
 		messages []ChatMessage,
 		useKnowledge bool,
@@ -51,6 +53,7 @@ type aiService struct {
 	maxScore float64
 	margin   float64
 	minChars int
+	tools    ToolRunner
 }
 
 func NewAIService(
@@ -59,11 +62,13 @@ func NewAIService(
 	topK int,
 	maxScore, margin float64,
 	minChars int,
+	tools ToolRunner,
 ) AIService {
 	return &aiService{
 		zvec: zvec, apiKey: apiKey, baseURL: strings.TrimSuffix(baseURL, "/"),
 		model: model, topK: topK, maxScore: maxScore,
 		margin: margin, minChars: minChars,
+		tools: tools,
 	}
 }
 
@@ -76,6 +81,7 @@ func (s *aiService) Ready() error {
 
 func (s *aiService) StreamChat(
 	ctx context.Context,
+	userID, workspaceID, pageID string,
 	workspaces []KnowledgeWorkspace,
 	messages []ChatMessage,
 	useKnowledge bool,
@@ -89,59 +95,13 @@ func (s *aiService) StreamChat(
 		return errors.New("messages are required")
 	}
 
-	question := messages[len(messages)-1].Content
-	system := "你是 Yestion 的 AI 助手，帮助用户在个人工作区中查找信息、总结内容和回答问题。回答使用与问题相同的语言，保持简洁、准确。"
-
-	var sources []model.ChatSource
-	if useKnowledge && s.zvec != nil && strings.TrimSpace(question) != "" && len(workspaces) > 0 {
-		for _, workspace := range workspaces {
-			hits, err := s.zvec.Search(ctx, workspace.ID, question, s.topK)
-			if err != nil {
-				return fmt.Errorf("search local knowledge: %w", err)
-			}
-			for _, hit := range filterBasic(hits, s.maxScore, s.minChars) {
-				sources = append(sources, model.ChatSource{
-					WorkspaceID:   workspace.ID,
-					WorkspaceName: workspace.Name,
-					DocumentID:    hit.DocumentID,
-					Title:         hit.Title,
-					Content:       hit.Content,
-					DocType:       hit.Type,
-					Score:         hit.Score,
-				})
-			}
-		}
-		sort.Slice(sources, func(i, j int) bool {
-			return sources[i].Score < sources[j].Score
-		})
-		sources = trimByMargin(sources, s.margin)
-		if len(sources) > s.topK {
-			sources = sources[:s.topK]
-		}
-	}
-	if len(sources) > 0 {
-		var contextBuilder strings.Builder
-		contextBuilder.WriteString("\n\n以下是与你问题相关的本地文档内容：\n")
-		for i, source := range sources {
-			fmt.Fprintf(
-				&contextBuilder,
-				"\n[文档 %d] %s（工作区：%s）\n%s\n",
-				i+1,
-				source.Title,
-				source.WorkspaceName,
-				strings.TrimSpace(source.Content),
-			)
-		}
-		contextBuilder.WriteString("\n请优先基于这些本地文档回答；如果文档中没有相关信息，请如实说明，不要编造。")
-		system += contextBuilder.String()
-	}
+	system := "你是 Yestion 的 AI 助手，帮助用户在个人工作区中创建内容、查找信息、总结内容和回答问题。" +
+		"回答使用与问题相同的语言，保持简洁、准确。你可以调用工具真正执行用户请求：" +
+		"create_document（在当前工作区新建文档）、create_subdocument（在当前文档下新建子文档）、" +
+		"create_workspace（新建工作区）。当用户询问工作区中的内容时，调用 search_workspace 检索后再回答。" +
+		"不要编造文档已存在或已创建；只有工具返回成功才算创建成功。"
 
 	flusher, _ := writer.(http.Flusher)
-	if len(sources) > 0 {
-		if err := writeSSESources(writer, flusher, sources); err != nil {
-			return err
-		}
-	}
 
 	apiMessages := make([]openai.ChatCompletionMessageParamUnion, 0, len(messages)+1)
 	apiMessages = append(apiMessages, openai.SystemMessage(system))
@@ -165,31 +125,271 @@ func (s *aiService) StreamChat(
 			option.WithJSONSet("thinking", map[string]string{"type": "disabled"}),
 		)
 	}
-	stream := client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
-		Model:    openai.ChatModel(s.model),
-		Messages: apiMessages,
-	}, requestOptions...)
 
+	var tools []openai.ChatCompletionToolParam
+	if workspaceID != "" {
+		tools = append(tools,
+			documentTool("create_document"),
+			documentTool("create_subdocument"),
+		)
+	}
+	tools = append(tools, workspaceTool())
+	if useKnowledge && s.zvec != nil && len(workspaces) > 0 {
+		tools = append(tools, searchTool())
+	}
+
+	sourcesEmitted := false
+	for round := 0; round < 4; round++ {
+		calls, err := s.streamOnce(
+			ctx, client, apiMessages, tools, thinkingEnabled,
+			requestOptions, writer, flusher, workspaces, &sourcesEmitted,
+		)
+		if err != nil {
+			return err
+		}
+		if len(calls) == 0 {
+			break
+		}
+
+		apiMessages = append(apiMessages, assistantToolCallMessage(calls))
+		for _, call := range calls {
+			var result string
+			if call.name == "search_workspace" {
+				result = s.runSearchTool(ctx, workspaces, call.args, writer, flusher, &sourcesEmitted)
+			} else {
+				var err error
+				result, err = s.tools.Run(ctx, userID, workspaceID, pageID, call.name, call.args)
+				if err != nil {
+					result = fmt.Sprintf(`{"ok":false,"tool":%q,"error":%q}`, call.name, err.Error())
+				}
+				if err := emitToolEvent(writer, flusher, result); err != nil {
+					return err
+				}
+			}
+			apiMessages = append(apiMessages, openai.ToolMessage(result, call.id))
+		}
+	}
+	return writeSSE(writer, flusher, "[DONE]", false)
+}
+
+type toolCall struct {
+	id      string
+	name    string
+	argsRaw string
+	args    map[string]any
+}
+
+func (s *aiService) streamOnce(
+	ctx context.Context,
+	client openai.Client,
+	messages []openai.ChatCompletionMessageParamUnion,
+	tools []openai.ChatCompletionToolParam,
+	thinkingEnabled bool,
+	requestOptions []option.RequestOption,
+	writer io.Writer,
+	flusher http.Flusher,
+	workspaces []KnowledgeWorkspace,
+	sourcesEmitted *bool,
+) ([]toolCall, error) {
+	params := openai.ChatCompletionNewParams{
+		Model:    openai.ChatModel(s.model),
+		Messages: messages,
+	}
+	if len(tools) > 0 {
+		params.Tools = tools
+	}
+	stream := client.Chat.Completions.NewStreaming(ctx, params, requestOptions...)
+
+	var calls []toolCall
 	for stream.Next() {
 		chunk := stream.Current()
 		for _, choice := range chunk.Choices {
 			if reasoning := deltaReasoningContent(choice.Delta); reasoning != "" {
 				if err := writeSSE(writer, flusher, reasoning, true); err != nil {
-					return err
+					return nil, err
 				}
 				continue
 			}
 			if content := choice.Delta.Content; content != "" {
 				if err := writeSSE(writer, flusher, content, false); err != nil {
-					return err
+					return nil, err
 				}
+			}
+			for _, toolCallDelta := range choice.Delta.ToolCalls {
+				index := int(toolCallDelta.Index)
+				for len(calls) <= index {
+					calls = append(calls, toolCall{})
+				}
+				if toolCallDelta.ID != "" {
+					calls[index].id = toolCallDelta.ID
+				}
+				if toolCallDelta.Function.Name != "" {
+					calls[index].name = toolCallDelta.Function.Name
+				}
+				calls[index].argsRaw += toolCallDelta.Function.Arguments
 			}
 		}
 	}
 	if err := stream.Err(); err != nil {
+		return nil, err
+	}
+	for i := range calls {
+		calls[i].args = map[string]any{}
+		if calls[i].argsRaw != "" {
+			_ = json.Unmarshal([]byte(calls[i].argsRaw), &calls[i].args)
+		}
+	}
+	return calls, nil
+}
+
+func assistantToolCallMessage(calls []toolCall) openai.ChatCompletionMessageParamUnion {
+	toolCalls := make([]openai.ChatCompletionMessageToolCallParam, 0, len(calls))
+	for _, call := range calls {
+		toolCalls = append(toolCalls, openai.ChatCompletionMessageToolCallParam{
+			ID: call.id,
+			Function: openai.ChatCompletionMessageToolCallFunctionParam{
+				Name:      call.name,
+				Arguments: call.argsRaw,
+			},
+		})
+	}
+	return openai.ChatCompletionMessageParamUnion{
+		OfAssistant: &openai.ChatCompletionAssistantMessageParam{ToolCalls: toolCalls},
+	}
+}
+
+func (s *aiService) runSearchTool(
+	ctx context.Context,
+	workspaces []KnowledgeWorkspace,
+	args map[string]any,
+	writer io.Writer,
+	flusher http.Flusher,
+	sourcesEmitted *bool,
+) string {
+	query := strings.TrimSpace(stringValue(args["query"]))
+	if query == "" {
+		return `{"ok":false,"error":"检索关键词不能为空"}`
+	}
+	var sources []model.ChatSource
+	for _, workspace := range workspaces {
+		hits, err := s.zvec.Search(ctx, workspace.ID, query, s.topK)
+		if err != nil {
+			return fmt.Sprintf(`{"ok":false,"error":%q}`, err.Error())
+		}
+		for _, hit := range filterBasic(hits, s.maxScore, s.minChars) {
+			sources = append(sources, model.ChatSource{
+				WorkspaceID:   workspace.ID,
+				WorkspaceName: workspace.Name,
+				DocumentID:    hit.DocumentID,
+				Title:         hit.Title,
+				Content:       hit.Content,
+				DocType:       hit.Type,
+				Score:         hit.Score,
+			})
+		}
+	}
+	sort.Slice(sources, func(i, j int) bool {
+		return sources[i].Score < sources[j].Score
+	})
+	sources = trimByMargin(sources, s.margin)
+	if len(sources) > s.topK {
+		sources = sources[:s.topK]
+	}
+
+	if len(sources) > 0 && !*sourcesEmitted {
+		*sourcesEmitted = true
+		if err := writeSSESources(writer, flusher, sources); err != nil {
+			return fmt.Sprintf(`{"ok":false,"error":%q}`, err.Error())
+		}
+	}
+
+	if len(sources) == 0 {
+		return `{"ok":true,"results":[]}`
+	}
+	var builder strings.Builder
+	for i, source := range sources {
+		fmt.Fprintf(
+			&builder,
+			"[文档 %d] %s（工作区：%s）\n%s\n\n",
+			i+1,
+			source.Title,
+			source.WorkspaceName,
+			strings.TrimSpace(source.Content),
+		)
+	}
+	return `{"ok":true,"results":` + jsonString(builder.String()) + `}`
+}
+
+func jsonString(value string) string {
+	data, _ := json.Marshal(value)
+	return string(data)
+}
+
+func emitToolEvent(writer io.Writer, flusher http.Flusher, result string) error {
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(result), &payload); err != nil {
+		payload = map[string]any{"ok": false, "error": result}
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
 		return err
 	}
-	return writeSSE(writer, flusher, "[DONE]", false)
+	if _, err := fmt.Fprintf(writer, "event: tool\ndata: %s\n\n", data); err != nil {
+		return err
+	}
+	if flusher != nil {
+		flusher.Flush()
+	}
+	return nil
+}
+
+func documentTool(name string) openai.ChatCompletionToolParam {
+	return openai.ChatCompletionToolParam{
+		Function: shared.FunctionDefinitionParam{
+			Name:        name,
+			Description: openai.String("在当前工作区中新建文档。title 为文档标题，content 为文档正文（可选）。"),
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"title":   map[string]any{"type": "string", "description": "文档标题"},
+					"content": map[string]any{"type": "string", "description": "文档正文（可选）"},
+				},
+				"required": []string{"title"},
+			},
+		},
+	}
+}
+
+func workspaceTool() openai.ChatCompletionToolParam {
+	return openai.ChatCompletionToolParam{
+		Function: shared.FunctionDefinitionParam{
+			Name:        "create_workspace",
+			Description: openai.String("新建一个工作区。name 为工作区名称。"),
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"name": map[string]any{"type": "string", "description": "工作区名称"},
+				},
+				"required": []string{"name"},
+			},
+		},
+	}
+}
+
+func searchTool() openai.ChatCompletionToolParam {
+	return openai.ChatCompletionToolParam{
+		Function: shared.FunctionDefinitionParam{
+			Name:        "search_workspace",
+			Description: openai.String("检索用户工作区中的文档内容，返回与查询相关的结果。当用户询问工作区内容时调用。"),
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"query": map[string]any{"type": "string", "description": "检索关键词或问题"},
+				},
+				"required": []string{"query"},
+			},
+		},
+	}
 }
 
 // filterSources drops documents that carry no text or are too far from the

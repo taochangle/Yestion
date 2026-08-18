@@ -13,6 +13,7 @@ import { useXChat, useXConversations, XRequest } from "@ant-design/x-sdk";
 import type { MessageInfo } from "@ant-design/x-sdk";
 import {
   YestionChatProvider,
+  setToolActionHandler,
   type ChatInput,
   type ChatMessage,
   type ChatOutput
@@ -81,14 +82,21 @@ function toConversationData(record: ChatConversationRecord) {
 
 export function ChatProvider({
   workspaceId,
+  onToolAction,
   children
 }: {
   workspaceId: string;
+  onToolAction?: (info: Record<string, unknown>) => void;
   children: ReactNode;
 }) {
   const { t } = useI18n();
   const [knowledgeEnabled, setKnowledgeEnabled] = useState(true);
   const [thinkingEnabled, setThinkingEnabled] = useState(true);
+
+  useEffect(() => {
+    setToolActionHandler(onToolAction ?? null);
+    return () => setToolActionHandler(null);
+  }, [onToolAction]);
   // Tracks conversations created this session that deserve an auto-title from
   // their first user message, and message ids already persisted to the server.
   const untitledRef = useRef(new Map<string, boolean>());

@@ -58,6 +58,7 @@ func main() {
 		cfg.ChatSourceMaxScore,
 		cfg.ChatSourceMargin,
 		cfg.ChatSourceMinChars,
+		service.NewDocumentToolRunner(workspaceService, blockService),
 	)
 	chatHistoryService := service.NewChatHistoryService(chatRepository)
 

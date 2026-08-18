@@ -126,6 +126,38 @@ export default function DashboardPage({
     }
   }, []);
 
+  const reloadWorkspaces = useCallback(async () => {
+    const result = await apiFetch<{ workspaces: Workspace[] }>(
+      "/api/workspaces"
+    );
+    setWorkspaces(result.workspaces);
+  }, []);
+
+  const handleToolAction = useCallback(
+    (info: Record<string, unknown>) => {
+      const tool = info.tool;
+      if (tool === "create_document" || tool === "create_subdocument") {
+        if (activeWorkspaceId && typeof info.id === "string") {
+          void loadBlocks(activeWorkspaceId, info.id);
+        } else if (activeWorkspaceId) {
+          void loadBlocks(activeWorkspaceId);
+        }
+      } else if (tool === "create_workspace") {
+        if (typeof info.id === "string") {
+          void reloadWorkspaces().then(() => {
+            const workspaceId = info.id as string;
+            setActiveWorkspaceId(workspaceId);
+            localStorage.setItem(ACTIVE_WORKSPACE_KEY, workspaceId);
+            void loadBlocks(workspaceId);
+          });
+        } else {
+          void reloadWorkspaces();
+        }
+      }
+    },
+    [activeWorkspaceId, loadBlocks, reloadWorkspaces]
+  );
+
   useEffect(() => {
     if (!getCookie("auth_token")) {
       router.replace("/login");
@@ -564,7 +596,10 @@ export default function DashboardPage({
     : null;
 
   return (
-    <ChatProvider workspaceId={activeWorkspaceId}>
+    <ChatProvider
+      workspaceId={activeWorkspaceId}
+      onToolAction={handleToolAction}
+    >
       <XProvider
         theme={{
           algorithm:
@@ -653,6 +688,8 @@ export default function DashboardPage({
               workspaceName={
                 workspaces.find((item) => item.id === activeWorkspaceId)?.name
               }
+              workspaceId={activeWorkspaceId}
+              pageId={selectedBlock?.id}
               onOpenSource={handleOpenChatSource}
               onInsertToDocument={handleInsertToEditor}
               onDuplicatePage={handleDuplicatePage}
@@ -688,6 +725,8 @@ export default function DashboardPage({
             workspaceName={
               workspaces.find((item) => item.id === activeWorkspaceId)?.name
             }
+            workspaceId={activeWorkspaceId}
+            pageId={selectedBlock?.id}
             onOpenSource={handleOpenChatSource}
             onInsertToDocument={handleInsertToEditor}
             onDuplicatePage={handleDuplicatePage}
