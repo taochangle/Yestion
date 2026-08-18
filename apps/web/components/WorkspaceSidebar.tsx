@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import Popconfirm from "@/components/ui/popconfirm";
 import {
   Tooltip,
   TooltipContent,
@@ -403,7 +404,7 @@ export default function WorkspaceSidebar({
         </>
         ) : (
           <div
-            className={`min-h-0 flex-1 overflow-y-auto px-2 py-3 pb-20 ${
+            className={`relative min-h-0 flex-1 overflow-y-auto px-2 py-3 pb-20 ${
               collapsed ? "hidden" : ""
             }`}
           >
@@ -433,10 +434,26 @@ export default function WorkspaceSidebar({
                 ],
                 onClick: ({ key }) => {
                   if (key === "delete") {
-                    chat.removeConversation(conversation.key);
+                    chat.requestDeleteConversation(conversation.key);
                   }
                 }
               })}
+            />
+            <Popconfirm
+              open={chat.pendingDeleteConversationKey !== null}
+              onOpenChange={(next) => {
+                if (!next) {
+                  chat.cancelDeleteConversation();
+                }
+              }}
+              onConfirm={chat.confirmDeleteConversation}
+              title={t("chat.deleteConversationTitle")}
+              description={t("chat.deleteConversationMessage")}
+              okText={t("common.delete")}
+              cancelText={t("common.cancel")}
+              danger
+              align="end"
+              anchorClassName="absolute right-4 top-2"
             />
           </div>
         )}

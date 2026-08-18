@@ -18,9 +18,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import Popconfirm from "@/components/ui/popconfirm";
 import { type BreadcrumbItem } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
@@ -55,29 +55,14 @@ export default function ChatPanel({
     setKnowledgeEnabled,
     workspaceId,
     activeConversationKey,
-    setActiveConversationKey,
-    addConversation,
-    removeConversation,
     messages,
     onRequest,
     isRequesting,
     abort,
-    handleNewConversation
+    handleNewConversation,
+    deleteConversation
   } = useChat();
   const [value, setValue] = useState("");
-
-  const handleDeleteConversation = useCallback(() => {
-    removeConversation(activeConversationKey);
-    const key = `conv-${Date.now()}`;
-    addConversation({ key, label: t("chat.newConversation") });
-    setActiveConversationKey(key);
-  }, [
-    activeConversationKey,
-    addConversation,
-    removeConversation,
-    setActiveConversationKey,
-    t
-  ]);
 
   const handleSubmit = useCallback(
     (content: string) => {
@@ -153,6 +138,24 @@ export default function ChatPanel({
           >
             <Plus />
           </Button>
+          <Popconfirm
+            title={t("chat.deleteConversationTitle")}
+            description={t("chat.deleteConversationMessage")}
+            okText={t("common.delete")}
+            cancelText={t("common.cancel")}
+            danger
+            onConfirm={() => deleteConversation(activeConversationKey)}
+          >
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="h-7 w-7 cursor-pointer p-0"
+              aria-label={t("chat.deleteConversation")}
+            >
+              <Trash2 />
+            </Button>
+          </Popconfirm>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -167,14 +170,6 @@ export default function ChatPanel({
               <DropdownMenuItem onClick={handleNewConversation}>
                 <Plus />
                 {t("chat.newConversation")}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleDeleteConversation}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 />
-                {t("chat.deleteConversation")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
