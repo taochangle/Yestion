@@ -27,6 +27,7 @@ type chatRequest struct {
 	Messages     []service.ChatMessage `json:"messages" binding:"required,min=1"`
 	UseKnowledge bool                  `json:"useKnowledge"`
 	UseSearch    bool                  `json:"useSearch"`
+	Thinking     *bool                 `json:"thinking"`
 	TopK         int                   `json:"topk"`
 }
 
@@ -45,6 +46,10 @@ func (h *ChatHandler) Stream(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	thinkingEnabled := true
+	if request.Thinking != nil {
+		thinkingEnabled = *request.Thinking
+	}
 
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
@@ -57,6 +62,7 @@ func (h *ChatHandler) Stream(c *gin.Context) {
 		request.Messages,
 		request.UseKnowledge,
 		request.UseSearch,
+		thinkingEnabled,
 		c.Writer,
 	); err != nil {
 		// The stream may have already started; write a final SSE error frame.

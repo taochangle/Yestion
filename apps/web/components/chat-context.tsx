@@ -32,9 +32,10 @@ function getProvider(
   conversationKey: string,
   workspaceId: string,
   knowledgeEnabled: boolean,
-  searchEnabled: boolean
+  searchEnabled: boolean,
+  thinkingEnabled: boolean
 ): YestionChatProvider {
-  const cacheKey = `${workspaceId}:${knowledgeEnabled ? 1 : 0}:${searchEnabled ? 1 : 0}:${conversationKey}`;
+  const cacheKey = `${workspaceId}:${knowledgeEnabled ? 1 : 0}:${searchEnabled ? 1 : 0}:${thinkingEnabled ? 1 : 0}:${conversationKey}`;
   let provider = providerCache.get(cacheKey);
   if (!provider) {
     provider = new YestionChatProvider({
@@ -43,7 +44,8 @@ function getProvider(
         params: {
           workspaceId,
           useKnowledge: knowledgeEnabled,
-          useSearch: searchEnabled
+          useSearch: searchEnabled,
+          thinking: thinkingEnabled
         }
       })
     });
@@ -61,6 +63,8 @@ type ChatContextValue = {
   setKnowledgeEnabled: (value: boolean) => void;
   searchEnabled: boolean;
   setSearchEnabled: (value: boolean) => void;
+  thinkingEnabled: boolean;
+  setThinkingEnabled: (value: boolean) => void;
   conversations: ConversationsState["conversations"];
   activeConversationKey: string;
   setActiveConversationKey: (key: string) => void;
@@ -68,6 +72,7 @@ type ChatContextValue = {
   removeConversation: ConversationsState["removeConversation"];
   messages: MessageInfo<ChatMessage>[];
   onRequest: ChatState["onRequest"];
+  onReload: ChatState["onReload"];
   isRequesting: boolean;
   abort: () => void;
   handleNewConversation: () => void;
@@ -90,6 +95,7 @@ export function ChatProvider({
   const { t } = useI18n();
   const [knowledgeEnabled, setKnowledgeEnabled] = useState(true);
   const [searchEnabled, setSearchEnabled] = useState(true);
+  const [thinkingEnabled, setThinkingEnabled] = useState(true);
   // Tracks conversations created this session that deserve an auto-title from
   // their first user message, and message ids already persisted to the server.
   const untitledRef = useRef(new Map<string, boolean>());
@@ -158,12 +164,13 @@ export function ChatProvider({
     };
   }, [setActiveConversationKey, setConversations, t, workspaceId]);
 
-  const { messages, onRequest, isRequesting, abort } = useXChat({
+  const { messages, onRequest, onReload, isRequesting, abort } = useXChat({
     provider: getProvider(
       activeConversationKey,
       workspaceId,
       knowledgeEnabled,
-      searchEnabled
+      searchEnabled,
+      thinkingEnabled
     ),
     conversationKey: activeConversationKey,
     defaultMessages: async (info?: { conversationKey?: string }) => {
@@ -309,6 +316,8 @@ export function ChatProvider({
     setKnowledgeEnabled,
     searchEnabled,
     setSearchEnabled,
+    thinkingEnabled,
+    setThinkingEnabled,
     conversations,
     activeConversationKey,
     setActiveConversationKey,
@@ -316,6 +325,7 @@ export function ChatProvider({
     removeConversation,
     messages,
     onRequest,
+    onReload,
     isRequesting,
     abort,
     handleNewConversation,

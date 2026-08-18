@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import {
+  Actions,
   Bubble,
   Prompts,
   Sender,
@@ -13,10 +14,12 @@ import { XMarkdown } from "@ant-design/x-markdown";
 import { Avatar } from "antd";
 import {
   Bot,
+  Brain,
   BookOpen,
   MoreHorizontal,
   PanelLeftOpen,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
   User
@@ -34,16 +37,18 @@ import Popconfirm from "@/components/ui/popconfirm";
 import { type BreadcrumbItem } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
-type RenderedMessage = ChatMessage & { status?: string };
+type RenderedMessage = ChatMessage & { status?: string; messageId?: string };
 
 function AssistantMessage({
   content,
   workspaceName,
-  onOpenSource
+  onOpenSource,
+  onRegenerate
 }: {
   content: RenderedMessage;
   workspaceName: string;
   onOpenSource?: (blockId: string) => void;
+  onRegenerate?: (messageId: string) => void;
 }) {
   const { t } = useI18n();
   const streaming =
@@ -74,6 +79,24 @@ function AssistantMessage({
           onClick={(item) => onOpenSource?.(String(item.key))}
         />
       ) : null}
+      <Actions
+        items={[
+          {
+            key: "copy",
+            actionRender: () => <Actions.Copy text={content.content} />
+          },
+          {
+            key: "regenerate",
+            icon: <RefreshCw size={14} />,
+            label: t("chat.regenerate"),
+            onItemClick: () => {
+              if (content.messageId) {
+                onRegenerate?.(content.messageId);
+              }
+            }
+          }
+        ]}
+      />
     </div>
   );
 }
@@ -97,10 +120,13 @@ export default function ChatPanel({
     setKnowledgeEnabled,
     searchEnabled,
     setSearchEnabled,
+    thinkingEnabled,
+    setThinkingEnabled,
     workspaceId,
     activeConversationKey,
     messages,
     onRequest,
+    onReload,
     isRequesting,
     abort,
     handleNewConversation,
@@ -116,6 +142,28 @@ export default function ChatPanel({
       onRequest({ messages: [{ role: "user", content }] });
     },
     [onRequest]
+  );
+
+  const handleRegenerate = useCallback(
+    (assistantId: string) => {
+      const index = messages.findIndex(
+        (item) => String(item.id) === assistantId
+      );
+      let question = "";
+      for (let i = index - 1; i >= 0; i -= 1) {
+        if (messages[i].message.role === "user") {
+          question = messages[i].message.content;
+          break;
+        }
+      }
+      if (!question) {
+        return;
+      }
+      onReload(assistantId, {
+        messages: [{ role: "user", content: question }]
+      });
+    },
+    [messages, onReload]
   );
 
   const promptItems = useMemo(
@@ -140,6 +188,7 @@ export default function ChatPanel({
             content={content}
             workspaceName={workspaceName}
             onOpenSource={onOpenSource}
+            onRegenerate={handleRegenerate}
           />
         )
       },
@@ -151,13 +200,13 @@ export default function ChatPanel({
         contentRender: (content: RenderedMessage) => content.content
       }
     }),
-    [onOpenSource, workspaceName]
+    [handleRegenerate, onOpenSource, workspaceName]
   );
 
   const items = messages.map(({ id, message, status }) => ({
     key: id,
     role: message.role,
-    content: { ...message, status },
+    content: { ...message, status, messageId: String(id) },
     loading: status === "loading"
   }));
 
@@ -294,6 +343,13 @@ export default function ChatPanel({
                   icon={<Search size={14} />}
                   checkedChildren={t("chat.useSearchOn")}
                   unCheckedChildren={t("chat.useSearchOff")}
+                />
+                <Sender.Switch
+                  value={thinkingEnabled}
+                  onChange={setThinkingEnabled}
+                  icon={<Brain size={14} />}
+                  checkedChildren={t("chat.thinkingOn")}
+                  unCheckedChildren={t("chat.thinkingOff")}
                 />
               </div>
               <div className="flex items-center">{actionNode}</div>

@@ -29,6 +29,7 @@ type AIService interface {
 		messages []ChatMessage,
 		useKnowledge bool,
 		useSearch bool,
+		thinkingEnabled bool,
 		writer io.Writer,
 	) error
 }
@@ -62,6 +63,7 @@ func (s *aiService) StreamChat(
 	messages []ChatMessage,
 	useKnowledge bool,
 	useSearch bool,
+	thinkingEnabled bool,
 	writer io.Writer,
 ) error {
 	if err := s.Ready(); err != nil {
@@ -115,10 +117,17 @@ func (s *aiService) StreamChat(
 		option.WithAPIKey(s.apiKey),
 		option.WithBaseURL(s.baseURL),
 	)
+	requestOptions := make([]option.RequestOption, 0, 1)
+	if !thinkingEnabled {
+		requestOptions = append(
+			requestOptions,
+			option.WithJSONSet("thinking", map[string]string{"type": "disabled"}),
+		)
+	}
 	stream := client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Model:    openai.ChatModel(s.model),
 		Messages: apiMessages,
-	})
+	}, requestOptions...)
 
 	for stream.Next() {
 		chunk := stream.Current()
