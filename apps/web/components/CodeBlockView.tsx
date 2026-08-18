@@ -53,7 +53,11 @@ export default function CodeBlockView({
 
   return (
     <NodeViewWrapper className="relative">
-      <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
+      <div
+        className={`absolute right-2 top-2 flex items-center gap-1 ${
+          open ? "z-50" : "z-10"
+        }`}
+      >
         <button
           type="button"
           className="inline-flex cursor-pointer items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
