@@ -408,18 +408,6 @@ export default function WorkspaceSidebar({
               collapsed ? "hidden" : ""
             }`}
           >
-            <div className="px-2 pb-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full justify-start gap-2"
-                onClick={chat.handleNewConversation}
-              >
-                <Plus size={14} />
-                {t("chat.newConversation")}
-              </Button>
-            </div>
             <Conversations
               items={chat.conversations}
               activeKey={chat.activeConversationKey}
