@@ -100,7 +100,7 @@ export default function ChatPage() {
   const [value, setValue] = useState("");
 
   useEffect(() => {
-    let active = false;
+    let active = true;
     async function load() {
       try {
         const result = await apiFetch<{ workspaces: Workspace[] }>(
